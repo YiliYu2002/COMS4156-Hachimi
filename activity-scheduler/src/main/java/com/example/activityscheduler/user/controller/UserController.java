@@ -1,0 +1,106 @@
+package com.example.activityscheduler.user.controller;
+
+import com.example.activityscheduler.user.model.User;
+import com.example.activityscheduler.user.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/** REST controller for managing User entities. Provides HTTP endpoints for user operations. */
+@RestController
+@RequestMapping("/api/users")
+@Tag(name = "User Management", description = "APIs for managing users")
+public class UserController {
+
+  private final UserRepository repo;
+
+  /**
+   * Constructs a UserController with the given repository.
+   *
+   * @param repo the user repository
+   */
+  public UserController(UserRepository repo) {
+    this.repo = repo;
+  }
+
+  /**
+   * Retrieves all users.
+   *
+   * @return a list of all users
+   */
+  @Operation(summary = "Get all users", description = "Retrieves a list of all users in the system")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved all users")
+      })
+  @GetMapping
+  public List<User> getAll() {
+    return repo.findAll();
+  }
+
+  /**
+   * Retrieves a user by their ID.
+   *
+   * @param id the user ID
+   * @return an Optional containing the user if found, empty otherwise
+   */
+  @Operation(
+      summary = "Get user by ID",
+      description = "Retrieves a specific user by their unique identifier")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "User found successfully"),
+        @ApiResponse(responseCode = "404", description = "User not found")
+      })
+  @GetMapping("/{id}")
+  public Optional<User> getById(@Parameter(description = "User ID") @PathVariable String id) {
+    return repo.findById(id);
+  }
+
+  /**
+   * Creates a new user.
+   *
+   * @param user the user to create
+   * @return the created user
+   */
+  @Operation(summary = "Create a new user", description = "Creates a new user in the system")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "User created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid user data")
+      })
+  @PostMapping
+  public User create(@RequestBody User user) {
+    return repo.save(user);
+  }
+
+  /**
+   * Checks if a user exists with the given email.
+   *
+   * @param email the email to check
+   * @return true if a user exists with this email, false otherwise
+   */
+  @Operation(
+      summary = "Check if user exists by email",
+      description = "Checks whether a user with the given email address exists")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Email check completed successfully")
+      })
+  @GetMapping("/exists")
+  public boolean existsByEmail(
+      @Parameter(description = "Email address to check") @RequestParam String email) {
+    return repo.existsByEmail(email);
+  }
+}
