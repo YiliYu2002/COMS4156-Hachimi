@@ -25,9 +25,6 @@ public class User {
   @Column(name = "display_name", nullable = false, length = 255)
   private String displayName;
 
-  @Column(length = 64, nullable = false)
-  private String tz = "UTC";
-
   @Column(name = "is_active", nullable = false)
   private boolean isActive = true;
 
@@ -40,17 +37,15 @@ public class User {
   }
 
   /**
-   * Constructs a User with the specified email, display name, and timezone.
+   * Constructs a User with the specified email, display name.
    *
    * @param email the user's email address
    * @param displayName the user's display name
-   * @param tz the user's timezone
    */
-  public User(String email, String displayName, String tz) {
+  public User(String email, String displayName) {
     this();
     this.email = email;
     this.displayName = displayName;
-    this.tz = tz;
   }
 
   // getters & setters
@@ -72,14 +67,6 @@ public class User {
 
   public void setDisplayName(String displayName) {
     this.displayName = displayName;
-  }
-
-  public String getTz() {
-    return tz;
-  }
-
-  public void setTz(String tz) {
-    this.tz = tz;
   }
 
   public boolean isActive() {

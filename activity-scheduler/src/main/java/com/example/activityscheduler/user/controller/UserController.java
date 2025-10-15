@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /** REST controller for managing User entities. Provides HTTP endpoints for user operations. */
 @RestController
@@ -69,23 +71,6 @@ public class UserController {
   }
 
   /**
-   * Creates a new user.
-   *
-   * @param user the user to create
-   * @return the created user
-   */
-  @Operation(summary = "Create a new user", description = "Creates a new user in the system")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "User created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid user data")
-      })
-  @PostMapping
-  public User create(@RequestBody User user) {
-    return repo.save(user);
-  }
-
-  /**
    * Checks if a user exists with the given email.
    *
    * @param email the email to check
@@ -102,5 +87,36 @@ public class UserController {
   public boolean existsByEmail(
       @Parameter(description = "Email address to check") @RequestParam String email) {
     return repo.existsByEmail(email);
+  }
+
+  /**
+   * Allows a new user to be registered by providing an email address.
+   *
+   * @param user the user to register
+   * @return the created user
+   */
+  @Operation(
+      summary = "Create a new user by email",
+      description = "Creates a new user in the system by providing an email address")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "User created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid user data"),
+        @ApiResponse(responseCode = "409", description = "User already exists")
+      })
+  @PostMapping("/register")
+  public User register(@RequestBody User user) {
+    // Basic validation to ensure required fields are present
+    if (user == null
+        || user.getEmail() == null
+        || user.getEmail().isBlank()
+        || user.getDisplayName() == null
+        || user.getDisplayName().isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user data");
+    }
+    if (repo.existsByEmail(user.getEmail())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "User already exists");
+    }
+    return repo.save(user);
   }
 }
