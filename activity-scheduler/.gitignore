@@ -143,6 +143,7 @@ local.properties
 *~
 
 # OS - macOS
+../.DS_Store
 */.DS_Store
 .DS_Store
 .AppleDouble
