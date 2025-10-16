@@ -232,3 +232,4 @@ secrets/
 *.p12
 *.jks
 *.keystore
+activity-scheduler/src/main/resources/application.yml
