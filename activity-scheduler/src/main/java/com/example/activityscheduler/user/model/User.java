@@ -12,12 +12,12 @@ import java.util.UUID;
  * the database.
  */
 @Entity
-@Table(name = "users") // existing table name
+@Table(name = "users")
 public class User {
 
   @Id
   @Column(columnDefinition = "CHAR(36)")
-  private String id; // matches CHAR(36)
+  private String id;
 
   @Column(nullable = false, unique = true, length = 320)
   private String email;
