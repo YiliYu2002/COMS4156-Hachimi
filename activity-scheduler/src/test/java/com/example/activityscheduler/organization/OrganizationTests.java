@@ -5,9 +5,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import com.example.activityscheduler.membership.model.MembershipStatus;
+import com.example.activityscheduler.membership.service.MembershipService;
 import com.example.activityscheduler.organization.model.Organization;
 import com.example.activityscheduler.organization.repository.OrganizationRepository;
 import com.example.activityscheduler.organization.service.OrganizationService;
+import com.example.activityscheduler.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +27,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class OrganizationTests {
 
   @Mock private OrganizationRepository organizationRepository;
+  @Mock private MembershipService membershipService;
+  @Mock private UserRepository userRepository;
 
   @InjectMocks private OrganizationService organizationService;
 
@@ -147,6 +152,7 @@ class OrganizationTests {
   void testCreateOrganizationSuccess() {
     // Given
     when(organizationRepository.existsByName(anyString())).thenReturn(false);
+    when(userRepository.existsById(testOrganization.getCreatedBy())).thenReturn(true);
     when(organizationRepository.save(any(Organization.class))).thenReturn(testOrganization);
 
     // When
@@ -155,7 +161,12 @@ class OrganizationTests {
     // Then
     assertEquals(testOrganization, result);
     verify(organizationRepository).existsByName(testOrganization.getName());
+    verify(userRepository).existsById(testOrganization.getCreatedBy());
     verify(organizationRepository).save(testOrganization);
+    // Verify that a membership is automatically created for the organization creator
+    verify(membershipService)
+        .createMembership(
+            testOrganization.getId(), testOrganization.getCreatedBy(), MembershipStatus.ACTIVE);
   }
 
   @Test
@@ -217,6 +228,7 @@ class OrganizationTests {
   @Test
   void testCreateOrganizationWithExistingName() {
     // Given
+    when(userRepository.existsById(testOrganization.getCreatedBy())).thenReturn(true);
     when(organizationRepository.existsByName(testOrganization.getName())).thenReturn(true);
 
     // When & Then
@@ -225,6 +237,49 @@ class OrganizationTests {
         () -> {
           organizationService.createOrganization(testOrganization);
         });
+  }
+
+  @Test
+  void testCreateOrganizationWithNonExistentUser() {
+    // Given
+    when(userRepository.existsById(testOrganization.getCreatedBy())).thenReturn(false);
+
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.createOrganization(testOrganization);
+        });
+
+    // Verify that user existence was checked but organization was not saved
+    verify(userRepository).existsById(testOrganization.getCreatedBy());
+    verify(organizationRepository, never()).existsByName(anyString());
+    verify(organizationRepository, never()).save(any(Organization.class));
+    verify(membershipService, never())
+        .createMembership(anyString(), anyString(), any(MembershipStatus.class));
+  }
+
+  @Test
+  void testCreateOrganizationWithMembershipCreationFailure() {
+    // Given
+    when(organizationRepository.existsByName(anyString())).thenReturn(false);
+    when(userRepository.existsById(testOrganization.getCreatedBy())).thenReturn(true);
+    when(organizationRepository.save(any(Organization.class))).thenReturn(testOrganization);
+    when(membershipService.createMembership(anyString(), anyString(), any(MembershipStatus.class)))
+        .thenThrow(new IllegalStateException("Membership creation failed"));
+
+    // When & Then
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          organizationService.createOrganization(testOrganization);
+        });
+
+    // Verify that organization was saved but membership creation failed
+    verify(organizationRepository).save(testOrganization);
+    verify(membershipService)
+        .createMembership(
+            testOrganization.getId(), testOrganization.getCreatedBy(), MembershipStatus.ACTIVE);
   }
 
   @Test

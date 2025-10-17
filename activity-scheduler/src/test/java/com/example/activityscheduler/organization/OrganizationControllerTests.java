@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.example.activityscheduler.organization.controller.OrganizationController;
+import com.example.activityscheduler.organization.dto.OrganizationCreationRequest;
 import com.example.activityscheduler.organization.model.Organization;
 import com.example.activityscheduler.organization.service.OrganizationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -137,6 +138,8 @@ class OrganizationControllerTests {
   @Test
   void testCreateOrganization() throws Exception {
     // Given
+    OrganizationCreationRequest request =
+        new OrganizationCreationRequest("Test Organization", "user123");
     when(organizationService.createOrganization(any(Organization.class)))
         .thenReturn(testOrganization);
 
@@ -145,7 +148,7 @@ class OrganizationControllerTests {
         .perform(
             post("/api/organizations/create")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testOrganization)))
+                .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.name").value("Test Organization"));
@@ -156,8 +159,8 @@ class OrganizationControllerTests {
   @Test
   void testCreateOrganizationWithInvalidData() throws Exception {
     // Given
-    Organization invalidOrg = new Organization("user123", "Test Org");
-    invalidOrg.setName(""); // Empty name
+    OrganizationCreationRequest request =
+        new OrganizationCreationRequest("", "user123"); // Empty name
     when(organizationService.createOrganization(any(Organization.class)))
         .thenThrow(new IllegalArgumentException("Organization name cannot be null or empty"));
 
@@ -166,7 +169,7 @@ class OrganizationControllerTests {
         .perform(
             post("/api/organizations/create")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidOrg)))
+                .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isBadRequest());
 
     verify(organizationService).createOrganization(any(Organization.class));
@@ -175,6 +178,8 @@ class OrganizationControllerTests {
   @Test
   void testCreateOrganizationWithDuplicateName() throws Exception {
     // Given
+    OrganizationCreationRequest request =
+        new OrganizationCreationRequest("Test Organization", "user123");
     when(organizationService.createOrganization(any(Organization.class)))
         .thenThrow(
             new IllegalStateException("Organization with name 'Test Organization' already exists"));
@@ -184,7 +189,7 @@ class OrganizationControllerTests {
         .perform(
             post("/api/organizations/create")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testOrganization)))
+                .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isConflict());
 
     verify(organizationService).createOrganization(any(Organization.class));

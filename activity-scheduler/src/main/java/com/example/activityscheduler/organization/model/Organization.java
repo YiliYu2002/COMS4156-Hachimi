@@ -29,6 +29,11 @@ public class Organization {
   private String createdBy;
 
   /** Default constructor. Generates a new UUID for the organization ID. */
+  public Organization() {
+    this.id = UUID.randomUUID().toString();
+  }
+
+  /** Parameterized constructor. Generates a new UUID for the organization ID. */
   public Organization(String createdBy, String name) {
     this.id = UUID.randomUUID().toString();
     this.createdBy = createdBy;
@@ -38,6 +43,10 @@ public class Organization {
   // getters & setters
   public String getId() {
     return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
   }
 
   public String getName() {

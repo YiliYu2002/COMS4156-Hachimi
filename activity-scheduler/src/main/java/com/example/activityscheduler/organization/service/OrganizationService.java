@@ -1,7 +1,10 @@
 package com.example.activityscheduler.organization.service;
 
+import com.example.activityscheduler.membership.model.MembershipStatus;
+import com.example.activityscheduler.membership.service.MembershipService;
 import com.example.activityscheduler.organization.model.Organization;
 import com.example.activityscheduler.organization.repository.OrganizationRepository;
+import com.example.activityscheduler.user.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
@@ -16,14 +19,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrganizationService {
 
   private final OrganizationRepository organizationRepository;
+  private final MembershipService membershipService;
+  private final UserRepository userRepository;
 
   /**
-   * Constructs an OrganizationService with the given repository.
+   * Constructs an OrganizationService with the given repository, membership service, and user
+   * repository.
    *
    * @param organizationRepository the organization repository
+   * @param membershipService the membership service
+   * @param userRepository the user repository
    */
-  public OrganizationService(OrganizationRepository organizationRepository) {
+  public OrganizationService(
+      OrganizationRepository organizationRepository,
+      MembershipService membershipService,
+      UserRepository userRepository) {
     this.organizationRepository = organizationRepository;
+    this.membershipService = membershipService;
+    this.userRepository = userRepository;
   }
 
   /**
@@ -70,7 +83,7 @@ public class OrganizationService {
   }
 
   /**
-   * Creates a new organization.
+   * Creates a new organization and automatically adds the creator as an active member.
    *
    * @param organization the organization to create
    * @return the created organization
@@ -90,12 +103,32 @@ public class OrganizationService {
       throw new IllegalArgumentException("Created by cannot be null or empty");
     }
 
+    // Validate that the user exists in the user table
+    if (!userRepository.existsById(organization.getCreatedBy())) {
+      throw new IllegalArgumentException(
+          "User with ID '" + organization.getCreatedBy() + "' does not exist");
+    }
+
     if (existsByName(organization.getName())) {
       throw new IllegalStateException(
           "Organization with name '" + organization.getName() + "' already exists");
     }
 
-    return organizationRepository.save(organization);
+    // Save the organization first
+    Organization savedOrganization = organizationRepository.save(organization);
+
+    // Automatically create a membership for the organization creator
+    try {
+      membershipService.createMembership(
+          savedOrganization.getId(), savedOrganization.getCreatedBy(), MembershipStatus.ACTIVE);
+    } catch (Exception e) {
+      // If membership creation fails, we should rollback the organization creation
+      // This will be handled by the @Transactional annotation
+      throw new IllegalStateException(
+          "Failed to create membership for organization creator: " + e.getMessage(), e);
+    }
+
+    return savedOrganization;
   }
 
   /**

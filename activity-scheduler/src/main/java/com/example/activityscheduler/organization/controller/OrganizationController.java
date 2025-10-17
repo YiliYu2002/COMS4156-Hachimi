@@ -1,5 +1,6 @@
 package com.example.activityscheduler.organization.controller;
 
+import com.example.activityscheduler.organization.dto.OrganizationCreationRequest;
 import com.example.activityscheduler.organization.model.Organization;
 import com.example.activityscheduler.organization.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -138,12 +139,12 @@ public class OrganizationController {
   /**
    * Creates a new organization.
    *
-   * @param organization the organization to create
+   * @param request the organization creation request
    * @return the created organization
    */
   @Operation(
       summary = "Create a new organization",
-      description = "Creates a new organization in the system")
+      description = "Creates a new organization in the system by providing name and creator")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "201", description = "Organization created successfully"),
@@ -153,8 +154,11 @@ public class OrganizationController {
             description = "Organization with this name already exists")
       })
   @PostMapping("/create")
-  public ResponseEntity<Organization> createOrganization(@RequestBody Organization organization) {
+  public ResponseEntity<Organization> createOrganization(
+      @RequestBody OrganizationCreationRequest request) {
     try {
+      // Create Organization entity from request
+      Organization organization = new Organization(request.getCreatedBy(), request.getName());
       Organization createdOrganization = organizationService.createOrganization(organization);
       return ResponseEntity.status(HttpStatus.CREATED).body(createdOrganization);
     } catch (IllegalArgumentException e) {

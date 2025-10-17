@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.example.activityscheduler.user.controller.UserController;
+import com.example.activityscheduler.user.dto.UserRegistrationRequest;
 import com.example.activityscheduler.user.model.User;
 import com.example.activityscheduler.user.repository.UserRepository;
 import java.util.List;
@@ -55,7 +56,8 @@ class UserControllerTests {
         .thenAnswer(inv -> inv.getArgument(0, User.class));
     UserController ctrl = new UserController(mockRepo);
 
-    User user = ctrl.register(new User("a@b.com", "Alice"));
+    UserRegistrationRequest request = new UserRegistrationRequest("a@b.com", "Alice");
+    User user = ctrl.register(request);
     assertThat(user).isNotNull();
     assertThat(user.getEmail()).isEqualTo("a@b.com");
   }
@@ -66,21 +68,24 @@ class UserControllerTests {
     Mockito.when(mockRepo.existsByEmail("a@b.com")).thenReturn(true);
     UserController ctrl = new UserController(mockRepo);
 
-    assertThrows(ResponseStatusException.class, () -> ctrl.register(new User("a@b.com", "Alice")));
+    UserRegistrationRequest request = new UserRegistrationRequest("a@b.com", "Alice");
+    assertThrows(ResponseStatusException.class, () -> ctrl.register(request));
   }
 
   @Test
   void testRegisterUserInvalidEmail() {
     UserRepository mockRepo = Mockito.mock(UserRepository.class);
     UserController ctrl = new UserController(mockRepo);
-    assertThrows(ResponseStatusException.class, () -> ctrl.register(new User("", "Alice")));
+    UserRegistrationRequest request = new UserRegistrationRequest("", "Alice");
+    assertThrows(ResponseStatusException.class, () -> ctrl.register(request));
   }
 
   @Test
   void testRegisterUserInvalidDisplayName() {
     UserRepository mockRepo = Mockito.mock(UserRepository.class);
     UserController ctrl = new UserController(mockRepo);
-    assertThrows(ResponseStatusException.class, () -> ctrl.register(new User("a@b.com", "")));
+    UserRegistrationRequest request = new UserRegistrationRequest("a@b.com", "");
+    assertThrows(ResponseStatusException.class, () -> ctrl.register(request));
   }
 
   @Test
@@ -94,13 +99,15 @@ class UserControllerTests {
   void testRegisterNullEmail() {
     UserRepository mockRepo = Mockito.mock(UserRepository.class);
     UserController ctrl = new UserController(mockRepo);
-    assertThrows(ResponseStatusException.class, () -> ctrl.register(new User(null, "Alice")));
+    UserRegistrationRequest request = new UserRegistrationRequest(null, "Alice");
+    assertThrows(ResponseStatusException.class, () -> ctrl.register(request));
   }
 
   @Test
   void testRegisterNullDisplayName() {
     UserRepository mockRepo = Mockito.mock(UserRepository.class);
     UserController ctrl = new UserController(mockRepo);
-    assertThrows(ResponseStatusException.class, () -> ctrl.register(new User("a@b.com", null)));
+    UserRegistrationRequest request = new UserRegistrationRequest("a@b.com", null);
+    assertThrows(ResponseStatusException.class, () -> ctrl.register(request));
   }
 }
