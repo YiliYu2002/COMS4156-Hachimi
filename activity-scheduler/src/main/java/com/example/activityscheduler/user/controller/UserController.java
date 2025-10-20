@@ -3,6 +3,7 @@ package com.example.activityscheduler.user.controller;
 import com.example.activityscheduler.user.dto.UserRegistrationRequest;
 import com.example.activityscheduler.user.model.User;
 import com.example.activityscheduler.user.repository.UserRepository;
+import com.example.activityscheduler.user.utils.EmailValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -116,6 +117,9 @@ public class UserController {
         || request.getDisplayName() == null
         || request.getDisplayName().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user data");
+    }
+    if (!EmailValidator.isValidEmail(request.getEmail())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email address");
     }
     if (repo.existsByEmail(request.getEmail())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "User already exists");

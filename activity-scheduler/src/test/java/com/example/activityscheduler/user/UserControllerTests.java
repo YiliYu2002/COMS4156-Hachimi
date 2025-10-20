@@ -145,4 +145,12 @@ class UserControllerTests {
 
     assertThrows(ResponseStatusException.class, () -> ctrl.updateUsername("1", "   "));
   }
+
+  @Test
+  void testRegisterWithInvalidEmail() {
+    UserRepository mockRepo = Mockito.mock(UserRepository.class);
+    UserController ctrl = new UserController(mockRepo);
+    UserRegistrationRequest request = new UserRegistrationRequest("invalid-email", "Alice");
+    assertThrows(ResponseStatusException.class, () -> ctrl.register(request));
+  }
 }

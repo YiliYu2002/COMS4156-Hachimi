@@ -57,10 +57,6 @@ public class User {
     return email;
   }
 
-  public void setEmail(String email) {
-    this.email = email;
-  }
-
   public String getDisplayName() {
     return displayName;
   }
@@ -79,9 +75,5 @@ public class User {
 
   public LocalDateTime getCreatedAt() {
     return createdAt;
-  }
-
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
   }
 }
