@@ -110,4 +110,39 @@ class UserControllerTests {
     UserRegistrationRequest request = new UserRegistrationRequest("a@b.com", null);
     assertThrows(ResponseStatusException.class, () -> ctrl.register(request));
   }
+
+  @Test
+  void testUpdateUsername() {
+    UserRepository mockRepo = Mockito.mock(UserRepository.class);
+    User testUser = new User("a@b.com", "Alice");
+    Mockito.when(mockRepo.findById("1")).thenReturn(Optional.of(testUser));
+    Mockito.when(mockRepo.save(Mockito.any(User.class)))
+        .thenAnswer(inv -> inv.getArgument(0, User.class));
+    UserController ctrl = new UserController(mockRepo);
+
+    User user = ctrl.updateUsername("1", "Bob");
+    assertThat(user).isNotNull();
+    assertThat(user.getDisplayName()).isEqualTo("Bob");
+  }
+
+  @Test
+  void testUpdateUsernameNotFound() {
+    UserRepository mockRepo = Mockito.mock(UserRepository.class);
+    UserController ctrl = new UserController(mockRepo);
+    assertThrows(ResponseStatusException.class, () -> ctrl.updateUsername("1", "Bob"));
+  }
+
+  @Test
+  void testUpdateUsernameInvalidDisplayName() {
+    UserRepository mockRepo = Mockito.mock(UserRepository.class);
+    User testUser = new User("a@b.com", "Alice");
+    Mockito.when(mockRepo.findById("1")).thenReturn(Optional.of(testUser));
+    UserController ctrl = new UserController(mockRepo);
+
+    assertThrows(ResponseStatusException.class, () -> ctrl.updateUsername("1", null));
+
+    assertThrows(ResponseStatusException.class, () -> ctrl.updateUsername("1", ""));
+
+    assertThrows(ResponseStatusException.class, () -> ctrl.updateUsername("1", "   "));
+  }
 }
