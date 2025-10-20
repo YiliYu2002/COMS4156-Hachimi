@@ -3,8 +3,11 @@ package com.example.activityscheduler.membership.controller;
 import com.example.activityscheduler.membership.model.Membership;
 import com.example.activityscheduler.membership.model.MembershipStatus;
 import com.example.activityscheduler.membership.service.MembershipService;
+import com.example.activityscheduler.organization.repository.OrganizationRepository;
+import com.example.activityscheduler.user.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,14 +34,23 @@ import org.springframework.web.server.ResponseStatusException;
 public class MembershipController {
 
   private final MembershipService membershipService;
+  private final UserRepository userRepository;
+  private final OrganizationRepository organizationRepository;
 
   /**
    * Constructs a MembershipController with the given service.
    *
    * @param membershipService the membership service
+   * @param userRepository the user repository
+   * @param organizationRepository the organization repository
    */
-  public MembershipController(MembershipService membershipService) {
+  public MembershipController(
+      MembershipService membershipService,
+      UserRepository userRepository,
+      OrganizationRepository organizationRepository) {
     this.membershipService = membershipService;
+    this.userRepository = userRepository;
+    this.organizationRepository = organizationRepository;
   }
 
   /**
@@ -201,6 +213,16 @@ public class MembershipController {
     if (statusUpdate == null || statusUpdate.getStatus() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status data");
     }
+    if (userRepository.findById(userId).isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+    }
+    if (organizationRepository.findById(orgId).isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
+    }
+    if (!statusUpdate.getStatus().equals(MembershipStatus.ACTIVE)
+        && !statusUpdate.getStatus().equals(MembershipStatus.SUSPENDED)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status data");
+    }
 
     try {
       return membershipService.updateMembershipStatus(orgId, userId, statusUpdate.getStatus());
@@ -305,9 +327,14 @@ public class MembershipController {
 
   /** Request DTO for creating a membership. */
   public static class MembershipRequest {
+    @Schema(description = "Organization ID", required = true)
     private String orgId;
+
+    @Schema(description = "User ID", required = true)
     private String userId;
-    private MembershipStatus status;
+
+    @Schema(description = "Membership status", example = "INVITED", defaultValue = "INVITED")
+    private MembershipStatus status = MembershipStatus.INVITED; // Default to INVITED
 
     public String getOrgId() {
       return orgId;

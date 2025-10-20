@@ -10,43 +10,44 @@ class MembershipStatusTests {
 
   @Test
   void getValue_returnsCorrectDatabaseValue() {
-    assertThat(MembershipStatus.ACTIVE.getValue()).isEqualTo("active");
-    assertThat(MembershipStatus.INVITED.getValue()).isEqualTo("invited");
-    assertThat(MembershipStatus.SUSPENDED.getValue()).isEqualTo("suspended");
+    assertThat(MembershipStatus.ACTIVE.getValue()).isEqualTo("ACTIVE");
+    assertThat(MembershipStatus.INVITED.getValue()).isEqualTo("INVITED");
+    assertThat(MembershipStatus.SUSPENDED.getValue()).isEqualTo("SUSPENDED");
   }
 
   @Test
-  void fromValue_validValues_returnsCorrectStatus() {
-    assertThat(MembershipStatus.fromValue("active")).isEqualTo(MembershipStatus.ACTIVE);
-    assertThat(MembershipStatus.fromValue("invited")).isEqualTo(MembershipStatus.INVITED);
-    assertThat(MembershipStatus.fromValue("suspended")).isEqualTo(MembershipStatus.SUSPENDED);
+  void fromString_validValues_returnsCorrectStatus() {
+    assertThat(MembershipStatus.fromString("active")).isEqualTo(MembershipStatus.ACTIVE);
+    assertThat(MembershipStatus.fromString("invited")).isEqualTo(MembershipStatus.INVITED);
+    assertThat(MembershipStatus.fromString("suspended")).isEqualTo(MembershipStatus.SUSPENDED);
+    assertThat(MembershipStatus.fromString("ACTIVE")).isEqualTo(MembershipStatus.ACTIVE);
+    assertThat(MembershipStatus.fromString("INVITED")).isEqualTo(MembershipStatus.INVITED);
+    assertThat(MembershipStatus.fromString("SUSPENDED")).isEqualTo(MembershipStatus.SUSPENDED);
   }
 
   @Test
-  void fromValue_invalidValue_throwsException() {
-    assertThatThrownBy(() -> MembershipStatus.fromValue("invalid"))
+  void fromString_invalidValue_throwsException() {
+    assertThatThrownBy(() -> MembershipStatus.fromString("invalid"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Unknown membership status: invalid");
   }
 
   @Test
-  void fromValue_nullValue_throwsException() {
-    assertThatThrownBy(() -> MembershipStatus.fromValue(null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Unknown membership status: null");
+  void fromString_nullValue_returnsNull() {
+    assertThat(MembershipStatus.fromString(null)).isNull();
   }
 
   @Test
-  void fromValue_emptyValue_throwsException() {
-    assertThatThrownBy(() -> MembershipStatus.fromValue(""))
+  void fromString_emptyValue_throwsException() {
+    assertThatThrownBy(() -> MembershipStatus.fromString(""))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Unknown membership status: ");
   }
 
   @Test
-  void fromValue_caseSensitive_throwsException() {
-    assertThatThrownBy(() -> MembershipStatus.fromValue("Active"))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Unknown membership status: Active");
+  void fromString_caseInsensitive_works() {
+    assertThat(MembershipStatus.fromString("Active")).isEqualTo(MembershipStatus.ACTIVE);
+    assertThat(MembershipStatus.fromString("INVITED")).isEqualTo(MembershipStatus.INVITED);
+    assertThat(MembershipStatus.fromString("suspended")).isEqualTo(MembershipStatus.SUSPENDED);
   }
 }

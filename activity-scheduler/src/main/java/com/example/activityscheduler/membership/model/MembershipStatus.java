@@ -1,5 +1,8 @@
 package com.example.activityscheduler.membership.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
  * Enum representing the possible status values for a membership. Maps to the 'status' column in the
  * memberships table.
@@ -7,13 +10,13 @@ package com.example.activityscheduler.membership.model;
 public enum MembershipStatus {
 
   /** Active membership - the user is an active member of the organization. */
-  ACTIVE("active"),
+  ACTIVE("ACTIVE"),
 
   /** Invited membership - the user has been invited but hasn't accepted yet. */
-  INVITED("invited"),
+  INVITED("INVITED"),
 
   /** Suspended membership - the user's membership has been suspended. */
-  SUSPENDED("suspended");
+  SUSPENDED("SUSPENDED");
 
   private final String value;
 
@@ -31,20 +34,25 @@ public enum MembershipStatus {
    *
    * @return the database value
    */
+  @JsonValue
   public String getValue() {
     return value;
   }
 
   /**
-   * Gets the MembershipStatus from its database value.
+   * Creates a MembershipStatus from a string value (case-insensitive).
    *
-   * @param value the database value
+   * @param value the string value
    * @return the corresponding MembershipStatus
    * @throws IllegalArgumentException if the value is not recognized
    */
-  public static MembershipStatus fromValue(String value) {
+  @JsonCreator
+  public static MembershipStatus fromString(String value) {
+    if (value == null) {
+      return null;
+    }
     for (MembershipStatus status : values()) {
-      if (status.value.equals(value)) {
+      if (status.value.equalsIgnoreCase(value)) {
         return status;
       }
     }
