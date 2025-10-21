@@ -1,5 +1,6 @@
 package com.example.activityscheduler.user.controller;
 
+import com.example.activityscheduler.user.dto.UserRegistrationRequest;
 import com.example.activityscheduler.user.model.User;
 import com.example.activityscheduler.user.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -90,14 +91,15 @@ public class UserController {
   }
 
   /**
-   * Allows a new user to be registered by providing an email address.
+   * Allows a new user to be registered by providing an email address and display name.
    *
-   * @param user the user to register
+   * @param request the user registration request
    * @return the created user
    */
   @Operation(
       summary = "Create a new user by email",
-      description = "Creates a new user in the system by providing an email address")
+      description =
+          "Creates a new user in the system by providing an email address and display name")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "User created successfully"),
@@ -105,18 +107,21 @@ public class UserController {
         @ApiResponse(responseCode = "409", description = "User already exists")
       })
   @PostMapping("/register")
-  public User register(@RequestBody User user) {
+  public User register(@RequestBody UserRegistrationRequest request) {
     // Basic validation to ensure required fields are present
-    if (user == null
-        || user.getEmail() == null
-        || user.getEmail().isBlank()
-        || user.getDisplayName() == null
-        || user.getDisplayName().isBlank()) {
+    if (request == null
+        || request.getEmail() == null
+        || request.getEmail().isBlank()
+        || request.getDisplayName() == null
+        || request.getDisplayName().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user data");
     }
-    if (repo.existsByEmail(user.getEmail())) {
+    if (repo.existsByEmail(request.getEmail())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "User already exists");
     }
+
+    // Create a new User entity with auto-generated ID
+    User user = new User(request.getEmail(), request.getDisplayName());
     return repo.save(user);
   }
 }
