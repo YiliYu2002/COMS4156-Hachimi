@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +37,7 @@ public class MembershipController {
   private final MembershipService membershipService;
   private final UserRepository userRepository;
   private final OrganizationRepository organizationRepository;
+  private static final Logger logger = Logger.getLogger(MembershipController.class.getName());
 
   /**
    * Constructs a MembershipController with the given service.
@@ -67,7 +69,10 @@ public class MembershipController {
       })
   @GetMapping
   public List<Membership> getAllMemberships() {
-    return membershipService.getAllMemberships();
+    logger.info("Retrieving all memberships");
+    List<Membership> memberships = membershipService.getAllMemberships();
+    logger.info("Retrieved " + memberships.size() + " memberships");
+    return memberships;
   }
 
   /**
@@ -89,7 +94,18 @@ public class MembershipController {
   public Optional<Membership> getMembership(
       @Parameter(description = "Organization ID") @PathVariable String orgId,
       @Parameter(description = "User ID") @PathVariable String userId) {
-    return membershipService.getMembership(orgId, userId);
+    logger.info("Retrieving membership for organization: " + orgId + " and user: " + userId);
+    Optional<Membership> membership = membershipService.getMembership(orgId, userId);
+    if (membership.isPresent()) {
+      logger.info(
+          "Membership found: organization: "
+              + membership.get().getOrgId()
+              + " and user: "
+              + membership.get().getUserId());
+    } else {
+      logger.info("Membership not found for organization: " + orgId + " and user: " + userId);
+    }
+    return membership;
   }
 
   /**
@@ -110,7 +126,10 @@ public class MembershipController {
   @GetMapping("/organization/{orgId}")
   public List<Membership> getMembershipsByOrganization(
       @Parameter(description = "Organization ID") @PathVariable String orgId) {
-    return membershipService.getMembershipsByOrganization(orgId);
+    logger.info("Retrieving memberships for organization: " + orgId);
+    List<Membership> memberships = membershipService.getMembershipsByOrganization(orgId);
+    logger.info("Retrieved " + memberships.size() + " memberships for organization: " + orgId);
+    return memberships;
   }
 
   /**
@@ -129,7 +148,10 @@ public class MembershipController {
   @GetMapping("/user/{userId}")
   public List<Membership> getMembershipsByUser(
       @Parameter(description = "User ID") @PathVariable String userId) {
-    return membershipService.getMembershipsByUser(userId);
+    logger.info("Retrieving memberships for user: " + userId);
+    List<Membership> memberships = membershipService.getMembershipsByUser(userId);
+    logger.info("Retrieved " + memberships.size() + " memberships for user: " + userId);
+    return memberships;
   }
 
   /**
@@ -150,7 +172,10 @@ public class MembershipController {
   @GetMapping("/status/{status}")
   public List<Membership> getMembershipsByStatus(
       @Parameter(description = "Membership status") @PathVariable MembershipStatus status) {
-    return membershipService.getMembershipsByStatus(status);
+    logger.info("Retrieving memberships by status: " + status);
+    List<Membership> memberships = membershipService.getMembershipsByStatus(status);
+    logger.info("Retrieved " + memberships.size() + " memberships by status: " + status);
+    return memberships;
   }
 
   /**
@@ -173,17 +198,35 @@ public class MembershipController {
     if (membershipRequest == null
         || membershipRequest.getOrgId() == null
         || membershipRequest.getUserId() == null) {
+      logger.warning("Invalid membership creation request: missing required fields");
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid membership data");
     }
 
+    logger.info(
+        "Creating membership for organization: "
+            + membershipRequest.getOrgId()
+            + " and user: "
+            + membershipRequest.getUserId()
+            + " with status: "
+            + membershipRequest.getStatus());
+
     try {
-      return membershipService.createMembership(
-          membershipRequest.getOrgId(),
-          membershipRequest.getUserId(),
-          membershipRequest.getStatus());
+      Membership createdMembership =
+          membershipService.createMembership(
+              membershipRequest.getOrgId(),
+              membershipRequest.getUserId(),
+              membershipRequest.getStatus());
+      logger.info(
+          "Successfully created membership for organization: "
+              + membershipRequest.getOrgId()
+              + " and user: "
+              + membershipRequest.getUserId());
+      return createdMembership;
     } catch (IllegalArgumentException e) {
+      logger.warning("Bad request for membership creation: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (IllegalStateException e) {
+      logger.warning("Conflict during membership creation: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
     }
   }
@@ -211,24 +254,45 @@ public class MembershipController {
       @Parameter(description = "User ID") @PathVariable String userId,
       @RequestBody StatusUpdateRequest statusUpdate) {
     if (statusUpdate == null || statusUpdate.getStatus() == null) {
+      logger.warning("Invalid status update request: status is null");
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status data");
     }
+
+    logger.info(
+        "Updating membership status for organization: "
+            + orgId
+            + " and user: "
+            + userId
+            + " to status: "
+            + statusUpdate.getStatus());
     if (userRepository.findById(userId).isEmpty()) {
+      logger.warning("User not found for membership status update: " + userId);
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
     }
     if (organizationRepository.findById(orgId).isEmpty()) {
+      logger.warning("Organization not found for membership status update: " + orgId);
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
     }
     if (!statusUpdate.getStatus().equals(MembershipStatus.ACTIVE)
         && !statusUpdate.getStatus().equals(MembershipStatus.SUSPENDED)) {
+      logger.warning("Invalid status for membership update: " + statusUpdate.getStatus());
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status data");
     }
 
     try {
-      return membershipService.updateMembershipStatus(orgId, userId, statusUpdate.getStatus());
+      Membership updatedMembership =
+          membershipService.updateMembershipStatus(orgId, userId, statusUpdate.getStatus());
+      logger.info(
+          "Successfully updated membership status for organization: "
+              + orgId
+              + " and user: "
+              + userId);
+      return updatedMembership;
     } catch (IllegalArgumentException e) {
+      logger.warning("Bad request for membership status update: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (IllegalStateException e) {
+      logger.warning("Membership not found for status update: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
     }
   }
@@ -251,11 +315,16 @@ public class MembershipController {
   public void deleteMembership(
       @Parameter(description = "Organization ID") @PathVariable String orgId,
       @Parameter(description = "User ID") @PathVariable String userId) {
+    logger.info("Deleting membership for organization: " + orgId + " and user: " + userId);
     try {
       membershipService.deleteMembership(orgId, userId);
+      logger.info(
+          "Successfully deleted membership for organization: " + orgId + " and user: " + userId);
     } catch (IllegalArgumentException e) {
+      logger.warning("Bad request for membership deletion: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (IllegalStateException e) {
+      logger.warning("Membership not found for deletion: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
     }
   }
@@ -280,7 +349,11 @@ public class MembershipController {
   public boolean existsMembership(
       @Parameter(description = "Organization ID") @PathVariable String orgId,
       @Parameter(description = "User ID") @PathVariable String userId) {
-    return membershipService.existsMembership(orgId, userId);
+    logger.info(
+        "Checking if membership exists for organization: " + orgId + " and user: " + userId);
+    boolean exists = membershipService.existsMembership(orgId, userId);
+    logger.info("Membership exists check result: " + exists);
+    return exists;
   }
 
   /**
@@ -301,7 +374,10 @@ public class MembershipController {
   @GetMapping("/organization/{orgId}/active-count")
   public long countActiveMembers(
       @Parameter(description = "Organization ID") @PathVariable String orgId) {
-    return membershipService.countActiveMembers(orgId);
+    logger.info("Counting active members for organization: " + orgId);
+    long count = membershipService.countActiveMembers(orgId);
+    logger.info("Active member count for organization " + orgId + ": " + count);
+    return count;
   }
 
   /**
@@ -322,7 +398,10 @@ public class MembershipController {
   @GetMapping("/user/{userId}/count")
   public long countUserMemberships(
       @Parameter(description = "User ID") @PathVariable String userId) {
-    return membershipService.countUserMemberships(userId);
+    logger.info("Counting memberships for user: " + userId);
+    long count = membershipService.countUserMemberships(userId);
+    logger.info("Membership count for user " + userId + ": " + count);
+    return count;
   }
 
   /** Request DTO for creating a membership. */
