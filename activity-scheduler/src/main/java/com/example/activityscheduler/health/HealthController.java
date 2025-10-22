@@ -27,7 +27,7 @@ public class HealthController {
    */
   @GetMapping("/health/basic")
   public String basicHealth() {
-    return "Application is running ✅";
+    return "Application is running";
   }
 
   /**
@@ -38,9 +38,9 @@ public class HealthController {
   @GetMapping("/health/db")
   public String dbHealth() {
     try (Connection conn = dataSource.getConnection()) {
-      return conn.isValid(2) ? "Database connected ✅" : "Database not connected ❌";
+      return conn.isValid(2) ? "Database connected" : "Database not connected";
     } catch (Exception e) {
-      return "Database connection failed ❌: " + e.getMessage();
+      return "Database connection failed: " + e.getMessage();
     }
   }
 }

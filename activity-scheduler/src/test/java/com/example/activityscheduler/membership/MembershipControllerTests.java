@@ -1,6 +1,8 @@
 package com.example.activityscheduler.membership;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -122,13 +124,13 @@ class MembershipControllerTests {
     String orgId = "org-123";
     String userId = "user-456";
     MembershipStatus status = MembershipStatus.ACTIVE;
-    Membership membership = new Membership(orgId, userId, status);
 
     MembershipRequest request = new MembershipRequest();
     request.setOrgId(orgId);
     request.setUserId(userId);
     request.setStatus(status);
 
+    Membership membership = new Membership(orgId, userId, status);
     when(mockService.createMembership(orgId, userId, status)).thenReturn(membership);
 
     Membership result = controller.createMembership(request);
@@ -174,7 +176,6 @@ class MembershipControllerTests {
     String orgId = "org-123";
     String userId = "user-456";
     MembershipStatus newStatus = MembershipStatus.SUSPENDED;
-    Membership updatedMembership = new Membership(orgId, userId, newStatus);
 
     StatusUpdateRequest request = new StatusUpdateRequest();
     request.setStatus(newStatus);
@@ -190,6 +191,8 @@ class MembershipControllerTests {
             Optional.of(
                 new com.example.activityscheduler.organization.model.Organization(
                     "Test Org", "user-123")));
+
+    Membership updatedMembership = new Membership(orgId, userId, newStatus);
     when(mockService.updateMembershipStatus(orgId, userId, newStatus))
         .thenReturn(updatedMembership);
 
@@ -453,5 +456,152 @@ class MembershipControllerTests {
             org.junit.jupiter.api.Assertions.assertThrows(
                 ResponseStatusException.class, () -> controller.createMembership(request)))
         .isNotNull();
+  }
+
+  @Test
+  void getAllMemberships_emptyResults_returnsEmptyList() {
+    when(mockService.getAllMemberships()).thenReturn(Arrays.asList());
+
+    List<Membership> result = controller.getAllMemberships();
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getAllMemberships_serviceException_throwsException() {
+    when(mockService.getAllMemberships()).thenThrow(new RuntimeException("Database error"));
+
+    assertThrows(RuntimeException.class, () -> controller.getAllMemberships());
+  }
+
+  @Test
+  void getMembershipsByOrganization_invalidOrgId_returnsEmptyList() {
+    String invalidOrgId = "";
+    when(mockService.getMembershipsByOrganization(invalidOrgId)).thenReturn(Arrays.asList());
+
+    List<Membership> result = controller.getMembershipsByOrganization(invalidOrgId);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getMembershipsByOrganization_emptyResults_returnsEmptyList() {
+    String orgId = "org-123";
+    when(mockService.getMembershipsByOrganization(orgId)).thenReturn(Arrays.asList());
+
+    List<Membership> result = controller.getMembershipsByOrganization(orgId);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getMembershipsByUser_invalidUserId_returnsEmptyList() {
+    String invalidUserId = "";
+    when(mockService.getMembershipsByUser(invalidUserId)).thenReturn(Arrays.asList());
+
+    List<Membership> result = controller.getMembershipsByUser(invalidUserId);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getMembershipsByUser_emptyResults_returnsEmptyList() {
+    String userId = "user-456";
+    when(mockService.getMembershipsByUser(userId)).thenReturn(Arrays.asList());
+
+    List<Membership> result = controller.getMembershipsByUser(userId);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getMembershipsByStatus_invalidStatus_returnsEmptyList() {
+    MembershipStatus invalidStatus = null;
+    when(mockService.getMembershipsByStatus(invalidStatus)).thenReturn(Arrays.asList());
+
+    List<Membership> result = controller.getMembershipsByStatus(invalidStatus);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getMembershipsByStatus_emptyResults_returnsEmptyList() {
+    MembershipStatus status = MembershipStatus.SUSPENDED;
+    when(mockService.getMembershipsByStatus(status)).thenReturn(Arrays.asList());
+
+    List<Membership> result = controller.getMembershipsByStatus(status);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void deleteMembership_invalidData_throwsException() {
+    String invalidOrgId = "";
+    String invalidUserId = "";
+
+    doThrow(new IllegalArgumentException("Invalid organization or user ID"))
+        .when(mockService)
+        .deleteMembership(invalidOrgId, invalidUserId);
+
+    assertThrows(
+        ResponseStatusException.class,
+        () -> controller.deleteMembership(invalidOrgId, invalidUserId));
+  }
+
+  @Test
+  void deleteMembership_notFound_throwsException() {
+    String orgId = "org-123";
+    String userId = "user-456";
+
+    doThrow(new IllegalStateException("Membership not found"))
+        .when(mockService)
+        .deleteMembership(orgId, userId);
+
+    assertThrows(ResponseStatusException.class, () -> controller.deleteMembership(orgId, userId));
+  }
+
+  @Test
+  void countActiveMembers_zeroCount_returnsZero() {
+    String orgId = "org-123";
+    long expectedCount = 0L;
+
+    when(mockService.countActiveMembers(orgId)).thenReturn(expectedCount);
+
+    long result = controller.countActiveMembers(orgId);
+
+    assertThat(result).isEqualTo(expectedCount);
+  }
+
+  @Test
+  void countActiveMembers_invalidOrgId_throwsException() {
+    String invalidOrgId = "";
+
+    when(mockService.countActiveMembers(invalidOrgId))
+        .thenThrow(new IllegalArgumentException("Invalid organization ID"));
+
+    assertThrows(IllegalArgumentException.class, () -> controller.countActiveMembers(invalidOrgId));
+  }
+
+  @Test
+  void countUserMemberships_zeroCount_returnsZero() {
+    String userId = "user-456";
+    long expectedCount = 0L;
+
+    when(mockService.countUserMemberships(userId)).thenReturn(expectedCount);
+
+    long result = controller.countUserMemberships(userId);
+
+    assertThat(result).isEqualTo(expectedCount);
+  }
+
+  @Test
+  void countUserMemberships_invalidUserId_throwsException() {
+    String invalidUserId = "";
+
+    when(mockService.countUserMemberships(invalidUserId))
+        .thenThrow(new IllegalArgumentException("Invalid user ID"));
+
+    assertThrows(
+        IllegalArgumentException.class, () -> controller.countUserMemberships(invalidUserId));
   }
 }
