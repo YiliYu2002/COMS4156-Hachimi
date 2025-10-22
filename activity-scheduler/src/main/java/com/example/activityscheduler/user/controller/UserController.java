@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserController {
 
   private final UserRepository repo;
+  private static final Logger logger = Logger.getLogger(UserController.class.getName());
 
   /**
    * Constructs a UserController with the given repository.
@@ -49,7 +51,10 @@ public class UserController {
       })
   @GetMapping
   public List<User> getAll() {
-    return repo.findAll();
+    logger.info("Retrieving all users");
+    List<User> users = repo.findAll();
+    logger.info("Retrieved " + users.size() + " users");
+    return users;
   }
 
   /**
@@ -68,7 +73,14 @@ public class UserController {
       })
   @GetMapping("/{id}")
   public Optional<User> getById(@Parameter(description = "User ID") @PathVariable String id) {
-    return repo.findById(id);
+    logger.info("Retrieving user with ID: " + id);
+    Optional<User> user = repo.findById(id);
+    if (user.isPresent()) {
+      logger.info("User found: " + user.get().getEmail());
+    } else {
+      logger.info("User not found with ID: " + id);
+    }
+    return user;
   }
 
   /**
@@ -87,7 +99,10 @@ public class UserController {
   @GetMapping("/exists")
   public boolean existsByEmail(
       @Parameter(description = "Email address to check") @RequestParam String email) {
-    return repo.existsByEmail(email);
+    logger.info("Checking if user exists with email: " + email);
+    boolean exists = repo.existsByEmail(email);
+    logger.info("User exists: " + exists);
+    return exists;
   }
 
   /**
@@ -122,6 +137,9 @@ public class UserController {
 
     // Create a new User entity with auto-generated ID
     User user = new User(request.getEmail(), request.getDisplayName());
-    return repo.save(user);
+    logger.info("Saving user: " + user.getEmail());
+    User savedUser = repo.save(user);
+    logger.info("User saved: " + savedUser.getEmail());
+    return savedUser;
   }
 }
