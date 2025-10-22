@@ -618,14 +618,6 @@ server:
 **PMD:** Static code analysis with default rules
 **JaCoCo:** Code coverage reporting with 80%+ target
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -672,21 +664,3 @@ to include an overall summary of our project.
 
 - **AlexZhu2** - *User, Organization, Membership Development* - [AlexZhu2](https://github.com/AlexZhu2)
 - **YiliYu2002** - *Database Management, Product Manager* - [YiliYu2002](https://github.com/YiliYu2002)
-
-## 🙏 Acknowledgments
-
-- Spring Boot team for the excellent framework
-- OpenAPI community for API documentation standards
-- All contributors and testers
-
----
-
-## 📞 Support
-
-If you have any questions or need help, please:
-
-1. Check the [API Documentation](http://localhost:8080/swagger-ui.html)
-2. Review the [Issues](../../issues) page
-3. Create a new issue if needed
-
-**Happy Coding! 🎉**
