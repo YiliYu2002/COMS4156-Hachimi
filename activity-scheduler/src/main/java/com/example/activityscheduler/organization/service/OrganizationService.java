@@ -7,6 +7,7 @@ import com.example.activityscheduler.organization.repository.OrganizationReposit
 import com.example.activityscheduler.user.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ public class OrganizationService {
   private final OrganizationRepository organizationRepository;
   private final MembershipService membershipService;
   private final UserRepository userRepository;
+  private static final Logger logger = Logger.getLogger(OrganizationService.class.getName());
 
   /**
    * Constructs an OrganizationService with the given repository, membership service, and user
@@ -46,7 +48,10 @@ public class OrganizationService {
    */
   @Transactional(readOnly = true)
   public List<Organization> getAllOrganizations() {
-    return organizationRepository.findAll();
+    logger.info("Retrieving all organizations");
+    List<Organization> organizations = organizationRepository.findAll();
+    logger.info("Retrieved " + organizations.size() + " organizations");
+    return organizations;
   }
 
   /**
@@ -57,7 +62,14 @@ public class OrganizationService {
    */
   @Transactional(readOnly = true)
   public Optional<Organization> getOrganizationById(String id) {
-    return organizationRepository.findById(id);
+    logger.info("Retrieving organization with ID: " + id);
+    Optional<Organization> organization = organizationRepository.findById(id);
+    if (organization.isPresent()) {
+      logger.info("Organization found: " + organization.get().getName());
+    } else {
+      logger.info("Organization not found with ID: " + id);
+    }
+    return organization;
   }
 
   /**
@@ -68,7 +80,14 @@ public class OrganizationService {
    */
   @Transactional(readOnly = true)
   public Optional<Organization> getOrganizationByName(String name) {
-    return organizationRepository.findByName(name);
+    logger.info("Retrieving organization with name: " + name);
+    Optional<Organization> organization = organizationRepository.findByName(name);
+    if (organization.isPresent()) {
+      logger.info("Organization found: " + organization.get().getName());
+    } else {
+      logger.info("Organization not found with name: " + name);
+    }
+    return organization;
   }
 
   /**
@@ -79,7 +98,10 @@ public class OrganizationService {
    */
   @Transactional(readOnly = true)
   public boolean existsByName(String name) {
-    return organizationRepository.existsByName(name);
+    logger.info("Checking if organization exists with name: " + name);
+    boolean exists = organizationRepository.existsByName(name);
+    logger.info("Organization exists: " + exists);
+    return exists;
   }
 
   /**
@@ -115,19 +137,28 @@ public class OrganizationService {
     }
 
     // Save the organization first
+    logger.info("Saving organization: " + organization.getName());
     Organization savedOrganization = organizationRepository.save(organization);
+    logger.info("Organization saved: " + savedOrganization.getName());
 
     // Automatically create a membership for the organization creator
     try {
+      logger.info(
+          "Creating membership for organization creator: " + savedOrganization.getCreatedBy());
       membershipService.createMembership(
           savedOrganization.getId(), savedOrganization.getCreatedBy(), MembershipStatus.ACTIVE);
+      logger.info(
+          "Membership created for organization creator: " + savedOrganization.getCreatedBy());
     } catch (Exception e) {
+      logger.warning("Failed to create membership for organization creator: " + e.getMessage());
       // If membership creation fails, we should rollback the organization creation
       // This will be handled by the @Transactional annotation
       throw new IllegalStateException(
           "Failed to create membership for organization creator: " + e.getMessage(), e);
     }
-
+    logger.info(
+        "Organization created and membership created for organization creator: "
+            + savedOrganization.getCreatedBy());
     return savedOrganization;
   }
 
@@ -142,18 +173,22 @@ public class OrganizationService {
    */
   public Organization updateOrganization(String id, Organization organization) {
     if (id == null || id.trim().isEmpty()) {
+      logger.warning("Organization ID cannot be null or empty");
       throw new IllegalArgumentException("Organization ID cannot be null or empty");
     }
 
     if (organization == null) {
+      logger.warning("Organization cannot be null");
       throw new IllegalArgumentException("Organization cannot be null");
     }
 
     if (organization.getName() == null || organization.getName().trim().isEmpty()) {
+      logger.warning("Organization name cannot be null or empty");
       throw new IllegalArgumentException("Organization name cannot be null or empty");
     }
 
     if (organization.getCreatedBy() == null || organization.getCreatedBy().trim().isEmpty()) {
+      logger.warning("Created by cannot be null or empty");
       throw new IllegalArgumentException("Created by cannot be null or empty");
     }
 
@@ -161,10 +196,12 @@ public class OrganizationService {
     Optional<Organization> existingWithName =
         organizationRepository.findByName(organization.getName());
     if (existingWithName.isPresent() && !existingWithName.get().getId().equals(id)) {
+      logger.warning("Organization with name '" + organization.getName() + "' already exists");
       throw new IllegalStateException(
           "Organization with name '" + organization.getName() + "' already exists");
     }
 
+    logger.info("Updating organization: " + id);
     Organization existingOrganization =
         organizationRepository
             .findById(id)
@@ -173,7 +210,10 @@ public class OrganizationService {
 
     existingOrganization.setName(organization.getName());
     existingOrganization.setCreatedBy(organization.getCreatedBy());
-    return organizationRepository.save(existingOrganization);
+    logger.info("Updating organization: " + existingOrganization.getName());
+    Organization updatedOrganization = organizationRepository.save(existingOrganization);
+    logger.info("Organization updated: " + updatedOrganization.getName());
+    return updatedOrganization;
   }
 
   /**
@@ -185,14 +225,17 @@ public class OrganizationService {
    */
   public void deleteOrganization(String id) {
     if (id == null || id.trim().isEmpty()) {
+      logger.warning("Organization ID cannot be null or empty");
       throw new IllegalArgumentException("Organization ID cannot be null or empty");
     }
 
     if (!organizationRepository.existsById(id)) {
+      logger.warning("Organization with ID '" + id + "' not found");
       throw new IllegalStateException("Organization with ID '" + id + "' not found");
     }
 
     organizationRepository.deleteById(id);
+    logger.info("Organization deleted: " + id);
   }
 
   /**
@@ -202,6 +245,9 @@ public class OrganizationService {
    */
   @Transactional(readOnly = true)
   public long getOrganizationCount() {
-    return organizationRepository.count();
+    logger.info("Getting organization count");
+    long count = organizationRepository.count();
+    logger.info("Organization count: " + count);
+    return count;
   }
 }

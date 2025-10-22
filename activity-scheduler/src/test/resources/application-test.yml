@@ -1,0 +1,43 @@
+# Test Configuration for API Integration Tests
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+  sql:
+    init:
+      mode: always
+
+# Logging Configuration for Tests
+logging:
+  level:
+    com.example.activityscheduler: INFO
+    org.springframework.web: DEBUG
+    org.springframework.test: DEBUG
+  file:
+    name: logs/test-activity-scheduler.log
+    max-size: 5MB
+    max-history: 3
+    total-size-cap: 15MB
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Test-specific configurations
+test:
+  database:
+    cleanup: true
+  logging:
+    verify: true
