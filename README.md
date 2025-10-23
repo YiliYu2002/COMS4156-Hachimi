@@ -582,3 +582,5 @@ to include an overall summary of our project.
 
 - **AlexZhu2** - *User, Organization, Membership Development* - [AlexZhu2](https://github.com/AlexZhu2)
 - **YiliYu2002** - *Database Management, Product Manager* - [YiliYu2002](https://github.com/YiliYu2002)
+- **Doglily3** - *Organization Development* - [Doglily3](https://github.com/Doglily3)
+- **jieji09** - *Event Development* - [jieji09](https://github.com/jieji09)
