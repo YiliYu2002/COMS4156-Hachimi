@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,6 +34,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class OrganizationController {
 
   private final OrganizationService organizationService;
+  private static final Logger logger = Logger.getLogger(OrganizationController.class.getName());
 
   /**
    * Constructs an OrganizationController with the given service.
@@ -57,7 +59,10 @@ public class OrganizationController {
       })
   @GetMapping
   public List<Organization> getAllOrganizations() {
-    return organizationService.getAllOrganizations();
+    logger.info("Retrieving all organizations");
+    List<Organization> organizations = organizationService.getAllOrganizations();
+    logger.info("Retrieved " + organizations.size() + " organizations");
+    return organizations;
   }
 
   /**
@@ -77,7 +82,13 @@ public class OrganizationController {
   @GetMapping("/{id}")
   public ResponseEntity<Organization> getOrganizationById(
       @Parameter(description = "Organization ID") @PathVariable String id) {
+    logger.info("Retrieving organization with ID: " + id);
     Optional<Organization> organization = organizationService.getOrganizationById(id);
+    if (organization.isPresent()) {
+      logger.info("Organization found: " + organization.get().getName());
+    } else {
+      logger.info("Organization not found with ID: " + id);
+    }
     return organization.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
 
@@ -98,7 +109,13 @@ public class OrganizationController {
   @GetMapping("/by-name")
   public ResponseEntity<Organization> getOrganizationByName(
       @Parameter(description = "Organization name") @RequestParam String name) {
+    logger.info("Retrieving organization with name: " + name);
     Optional<Organization> organization = organizationService.getOrganizationByName(name);
+    if (organization.isPresent()) {
+      logger.info("Organization found: " + organization.get().getName());
+    } else {
+      logger.info("Organization not found with name: " + name);
+    }
     return organization.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
 
@@ -118,7 +135,10 @@ public class OrganizationController {
   @GetMapping("/exists")
   public boolean existsByName(
       @Parameter(description = "Organization name to check") @RequestParam String name) {
-    return organizationService.existsByName(name);
+    logger.info("Checking if organization exists with name: " + name);
+    boolean exists = organizationService.existsByName(name);
+    logger.info("Organization exists: " + exists);
+    return exists;
   }
 
   /**
@@ -133,7 +153,10 @@ public class OrganizationController {
       value = {@ApiResponse(responseCode = "200", description = "Count retrieved successfully")})
   @GetMapping("/count")
   public long getOrganizationCount() {
-    return organizationService.getOrganizationCount();
+    logger.info("Getting organization count");
+    long count = organizationService.getOrganizationCount();
+    logger.info("Organization count: " + count);
+    return count;
   }
 
   /**
@@ -160,10 +183,13 @@ public class OrganizationController {
       // Create Organization entity from request
       Organization organization = new Organization(request.getCreatedBy(), request.getName());
       Organization createdOrganization = organizationService.createOrganization(organization);
+      logger.info("Organization created: " + createdOrganization.getName());
       return ResponseEntity.status(HttpStatus.CREATED).body(createdOrganization);
     } catch (IllegalArgumentException e) {
+      logger.warning("Invalid organization data: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (IllegalStateException e) {
+      logger.warning("Organization already exists: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
     }
   }
@@ -193,13 +219,17 @@ public class OrganizationController {
       @RequestBody Organization organization) {
     try {
       Organization updatedOrganization = organizationService.updateOrganization(id, organization);
+      logger.info("Organization updated: " + updatedOrganization.getName());
       return ResponseEntity.ok(updatedOrganization);
     } catch (IllegalArgumentException e) {
+      logger.warning("Invalid organization data: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (IllegalStateException e) {
       if (e.getMessage().contains("not found")) {
+        logger.warning("Organization not found: " + e.getMessage());
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
       } else {
+        logger.warning("Organization already exists: " + e.getMessage());
         throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
       }
     }
@@ -224,8 +254,10 @@ public class OrganizationController {
       organizationService.deleteOrganization(id);
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
+      logger.warning("Invalid organization data: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (IllegalStateException e) {
+      logger.warning("Organization not found: " + e.getMessage());
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
     }
   }

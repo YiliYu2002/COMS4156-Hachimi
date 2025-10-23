@@ -234,3 +234,4 @@ secrets/
 *.jks
 *.keystore
 activity-scheduler/src/main/resources/application.yml
+activity-scheduler/logs/*

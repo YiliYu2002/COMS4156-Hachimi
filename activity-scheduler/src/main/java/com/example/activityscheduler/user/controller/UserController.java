@@ -3,6 +3,7 @@ package com.example.activityscheduler.user.controller;
 import com.example.activityscheduler.user.dto.UserRegistrationRequest;
 import com.example.activityscheduler.user.model.User;
 import com.example.activityscheduler.user.repository.UserRepository;
+import com.example.activityscheduler.user.utils.EmailValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -10,10 +11,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,6 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserController {
 
   private final UserRepository repo;
+  private static final Logger logger = Logger.getLogger(UserController.class.getName());
 
   /**
    * Constructs a UserController with the given repository.
@@ -49,7 +53,10 @@ public class UserController {
       })
   @GetMapping
   public List<User> getAll() {
-    return repo.findAll();
+    logger.info("Retrieving all users");
+    List<User> users = repo.findAll();
+    logger.info("Retrieved " + users.size() + " users");
+    return users;
   }
 
   /**
@@ -68,7 +75,14 @@ public class UserController {
       })
   @GetMapping("/{id}")
   public Optional<User> getById(@Parameter(description = "User ID") @PathVariable String id) {
-    return repo.findById(id);
+    logger.info("Retrieving user with ID: " + id);
+    Optional<User> user = repo.findById(id);
+    if (user.isPresent()) {
+      logger.info("User found: " + user.get().getEmail());
+    } else {
+      logger.info("User not found with ID: " + id);
+    }
+    return user;
   }
 
   /**
@@ -87,7 +101,10 @@ public class UserController {
   @GetMapping("/exists")
   public boolean existsByEmail(
       @Parameter(description = "Email address to check") @RequestParam String email) {
-    return repo.existsByEmail(email);
+    logger.info("Checking if user exists with email: " + email);
+    boolean exists = repo.existsByEmail(email);
+    logger.info("User exists: " + exists);
+    return exists;
   }
 
   /**
@@ -116,12 +133,45 @@ public class UserController {
         || request.getDisplayName().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user data");
     }
+    if (!EmailValidator.isValidEmail(request.getEmail())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email address");
+    }
     if (repo.existsByEmail(request.getEmail())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "User already exists");
     }
 
     // Create a new User entity with auto-generated ID
     User user = new User(request.getEmail(), request.getDisplayName());
+    logger.info("Saving user: " + user.getEmail());
+    User savedUser = repo.save(user);
+    logger.info("User saved: " + savedUser.getEmail());
+    return savedUser;
+  }
+
+  /**
+   * Updates an existing user's username.
+   *
+   * @param id the user ID
+   * @return the updated user
+   */
+  @Operation(summary = "Update user username", description = "Updates an existing user's username")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "User updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid user data"),
+        @ApiResponse(responseCode = "404", description = "User not found")
+      })
+  @PutMapping("/{id}/username")
+  public User updateUsername(
+      @Parameter(description = "User ID") @PathVariable String id,
+      @RequestBody String displayName) {
+    User user =
+        repo.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    if (displayName == null || displayName.isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid display name");
+    }
+    user.setDisplayName(displayName);
     return repo.save(user);
   }
 }
