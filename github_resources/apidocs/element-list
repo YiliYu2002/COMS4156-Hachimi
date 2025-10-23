@@ -1,0 +1,15 @@
+com.example.activityscheduler
+com.example.activityscheduler.health
+com.example.activityscheduler.membership.controller
+com.example.activityscheduler.membership.model
+com.example.activityscheduler.membership.repository
+com.example.activityscheduler.membership.service
+com.example.activityscheduler.organization.controller
+com.example.activityscheduler.organization.dto
+com.example.activityscheduler.organization.model
+com.example.activityscheduler.organization.repository
+com.example.activityscheduler.organization.service
+com.example.activityscheduler.user.controller
+com.example.activityscheduler.user.dto
+com.example.activityscheduler.user.model
+com.example.activityscheduler.user.repository
