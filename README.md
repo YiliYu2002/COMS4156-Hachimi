@@ -176,7 +176,10 @@ cp -r target/site/apidocs github_resources/
 - **REST API Docs**: [`github_resources/api-docs.html`](github_resources/api-docs.html) (REST endpoints, schemas, examples)
 - **Java API Docs**: [`github_resources/apidocs/index.html`](github_resources/apidocs/index.html) (Java classes, methods, parameters)
 
-**Note**: Both documentation files are available in the GitHub repository and can be viewed directly in the browser when browsing the repository.
+**Note**: To view the HTML documentation properly:
+1. **Download the files** and open them in your browser
+2. **Use GitHub Pages** (see setup instructions below)
+3. **View locally** after cloning the repository
 
 ### API Overview
 
