@@ -173,8 +173,8 @@ cp -r target/site/apidocs github_resources/
 ```
 
 **Documentation Output:**
-- **REST API Docs**: [`github_resources/api-docs.html`](github_resources/api-docs.html) (REST endpoints, schemas, examples)
-- **Java API Docs**: [`github_resources/apidocs/index.html`](github_resources/apidocs/index.html) (Java classes, methods, parameters)
+- **REST API Docs**: [REST API Docs](https://YiliYu2002.github.io/COMS4156-Hachimi/api-docs.html) (REST endpoints, schemas, examples)
+- **Java API Docs**: [Java API Docs](https://YiliYu2002.github.io/COMS4156-Hachimi/apidocs/index.html) (Java classes, methods, parameters)
 
 **Note**: To view the HTML documentation properly:
 1. **Download the files** and open them in your browser
