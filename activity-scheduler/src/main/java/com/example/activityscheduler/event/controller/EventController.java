@@ -11,6 +11,8 @@ import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +36,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Tag(name = "Event Management", description = "APIs for managing events and scheduling")
 public class EventController {
 
+  private static final Logger logger = LoggerFactory.getLogger(EventController.class);
   private final EventService eventService;
 
   /**
@@ -60,10 +63,13 @@ public class EventController {
       })
   @PostMapping
   public ResponseEntity<Event> createEvent(@Valid @RequestBody Event event) {
+    logger.info("Received request to create event: {}", event != null ? event.getTitle() : "null");
     try {
       Event createdEvent = eventService.createEvent(event);
+      logger.info("Successfully created event with ID: {}", createdEvent.getId());
       return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
     } catch (IllegalArgumentException e) {
+      logger.error("Failed to create event: {}", e.getMessage());
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
     }
   }
@@ -85,8 +91,15 @@ public class EventController {
   @GetMapping("/{id}")
   public ResponseEntity<Event> getEventById(
       @Parameter(description = "Event ID") @PathVariable String id) {
+    logger.debug("Received request to get event with ID: {}", id);
     Optional<Event> event = eventService.getEventById(id);
-    return event.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    if (event.isPresent()) {
+      logger.debug("Found event: {}", event.get().getTitle());
+      return ResponseEntity.ok(event.get());
+    } else {
+      logger.warn("Event not found with ID: {}", id);
+      return ResponseEntity.notFound().build();
+    }
   }
 
   /**
@@ -107,10 +120,13 @@ public class EventController {
   public ResponseEntity<Event> updateEvent(
       @Parameter(description = "Event ID") @PathVariable String id,
       @Valid @RequestBody Event event) {
+    logger.info("Received request to update event with ID: {}", id);
     try {
       Event updatedEvent = eventService.updateEvent(id, event);
+      logger.info("Successfully updated event with ID: {}", id);
       return ResponseEntity.ok(updatedEvent);
     } catch (IllegalArgumentException e) {
+      logger.error("Failed to update event with ID {}: {}", id, e.getMessage());
       if (e.getMessage().contains("not found")) {
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
       }
@@ -133,10 +149,13 @@ public class EventController {
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteEvent(
       @Parameter(description = "Event ID") @PathVariable String id) {
+    logger.info("Received request to delete event with ID: {}", id);
     try {
       eventService.deleteEvent(id);
+      logger.info("Successfully deleted event with ID: {}", id);
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
+      logger.error("Failed to delete event with ID {}: {}", id, e.getMessage());
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
     }
   }
@@ -151,7 +170,10 @@ public class EventController {
       value = {@ApiResponse(responseCode = "200", description = "Events retrieved successfully")})
   @GetMapping
   public List<Event> getAllEvents() {
-    return eventService.getAllEvents();
+    logger.debug("Received request to get all events");
+    List<Event> events = eventService.getAllEvents();
+    logger.debug("Returning {} events", events.size());
+    return events;
   }
 
   /**
@@ -178,6 +200,9 @@ public class EventController {
           @RequestParam
           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
           LocalDateTime endTime) {
-    return eventService.findConflictingEvents(startTime, endTime);
+    logger.debug("Received request to check conflicts from {} to {}", startTime, endTime);
+    List<Event> conflicts = eventService.findConflictingEvents(startTime, endTime);
+    logger.debug("Found {} conflicting events", conflicts.size());
+    return conflicts;
   }
 }
