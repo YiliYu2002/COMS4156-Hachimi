@@ -62,7 +62,7 @@ mysql --version  # Should show MySQL 8.0+
 ### 3. Database Setup
 
 **Option 1: Use Existing Database (Recommended)**
-The application is configured to use a remote MySQL database. No local setup required. You will need to add your cloud database url and corresponding port, username, and password to `src/main/resources/application.yml`. See the [Application Properties](#application-properties) section below for detailed configuration options.
+The application is configured to use a remote MySQL database. No local setup required. You will need to add your cloud database url and corresponding port, username, and password to `src/main/resources/application.yml`. See the [Configuration](#configuration) section below for detailed configuration options.
 
 **Option 2: Local Database Setup**
 If you want to use a local database, update `src/main/resources/application.yml`:
@@ -129,10 +129,6 @@ curl http://localhost:8080/health/basic
 curl http://localhost:8080/health/db
 ```
 
-**API Documentation:**
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- OpenAPI JSON: http://localhost:8080/v3/api-docs
-
 ## 📚 API Documentation
 
 ### Interactive API Documentation (Swagger UI)
@@ -143,170 +139,62 @@ Once the application is running, access the interactive API documentation at:
 - **OpenAPI JSON**: `http://localhost:8080/v3/api-docs`
 - **OpenAPI YAML**: `http://localhost:8080/v3/api-docs.yaml`
 
-### API Endpoints
+### Static Documentation
 
-#### Health Check Endpoints
+#### REST API Documentation (OpenAPI)
 
-| Method | Endpoint | Description | Status Codes |
-|--------|----------|-------------|-------------|
-| `GET` | `/health/basic` | Basic application health check | 200: Application running |
-| `GET` | `/health/db` | Database connectivity check | 200: Database connected |
+For REST API documentation, you can generate static HTML documentation:
 
-**Side Effects:** None
-
-#### User Management
-
-| Method | Endpoint | Description | Status Codes |
-|--------|----------|-------------|-------------|
-| `GET` | `/api/users` | Get all users | 200: Success |
-| `GET` | `/api/users/{id}` | Get user by ID | 200: Found, 404: Not found |
-| `GET` | `/api/users/exists?email={email}` | Check if user exists by email | 200: Boolean result |
-| `POST` | `/api/users/register` | Create a new user | 200: Created, 400: Invalid data, 409: User exists |
-
-**Request/Response Examples:**
-
-**Create a User:**
 ```bash
-curl -X POST http://localhost:8080/api/users/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "displayName": "John Doe"
-  }'
+# 1. Start the application
+mvn spring-boot:run
+
+# 2. Generate OpenAPI spec (in another terminal)
+curl http://localhost:8080/v3/api-docs.yaml > openapi.yaml
+
+# 3. Generate static HTML documentation
+npm install -g redoc-cli
+redoc-cli build openapi.yaml --output docs/api-docs.html
 ```
 
-**Response (200):**
-```json
-{
-  "id": "uuid-generated-id",
-  "email": "user@example.com",
-  "displayName": "John Doe",
-  "isActive": true,
-  "createdAt": "2024-01-01T00:00:00Z"
-}
-```
+#### Java API Documentation (Javadoc)
 
-**Side Effects:** User creation adds a new record to the database
+For Java code documentation, generate Javadoc:
 
-
-**Get All Users:**
 ```bash
-curl -X GET http://localhost:8080/api/users
+# Generate Javadoc HTML documentation
+mvn javadoc:javadoc
+
+# View the documentation
+open target/site/apidocs/index.html
+
+# Or copy to github_resources for GitHub viewing
+cp -r target/site/apidocs github_resources/
 ```
 
-#### Organization Management
+**Documentation Output:**
+- **REST API Docs**: [`github_resources/api-docs.html`](github_resources/api-docs.html) (REST endpoints, schemas, examples)
+- **Java API Docs**: [`github_resources/apidocs/index.html`](github_resources/apidocs/index.html) (Java classes, methods, parameters)
 
-| Method | Endpoint | Description | Status Codes |
-|--------|----------|-------------|-------------|
-| `GET` | `/api/organizations` | Get all organizations | 200: Success |
-| `GET` | `/api/organizations/{id}` | Get organization by ID | 200: Found, 404: Not found |
-| `GET` | `/api/organizations/by-name?name={name}` | Get organization by name | 200: Found, 404: Not found |
-| `GET` | `/api/organizations/exists?name={name}` | Check if organization exists | 200: Boolean result |
-| `GET` | `/api/organizations/count` | Get organization count | 200: Count |
-| `POST` | `/api/organizations/create` | Create new organization | 201: Created, 400: Invalid data, 409: Name exists |
-| `PUT` | `/api/organizations/{id}` | Update organization | 200: Updated, 400: Invalid data, 404: Not found, 409: Name exists |
-| `DELETE` | `/api/organizations/{id}` | Delete organization | 204: Deleted, 404: Not found |
+**Note**: To view the HTML documentation properly:
+1. **Download the files** and open them in your browser
+2. **Use GitHub Pages** (see setup instructions below)
+3. **View locally** after cloning the repository
 
-**Request/Response Examples:**
+### API Overview
 
-**Create Organization:**
-```bash
-curl -X POST http://localhost:8080/api/organizations/create \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Acme Corp",
-    "createdBy": "user-uuid"
-  }'
-```
+The Activity Scheduler API provides comprehensive REST endpoints for:
 
-**Response (201):**
-```json
-{
-  "id": "org-uuid",
-  "name": "Acme Corp",
-  "createdBy": "user-uuid",
-  "createdAt": "2024-01-01T00:00:00Z"
-}
-```
+- **User Management**: Complete CRUD operations for user entities
+- **Organization Management**: Full organization lifecycle management  
+- **Membership Management**: User-organization relationship management
+- **Health Monitoring**: Application and database health checks
 
-**Side Effects:** Organization creation adds a new record to the database
-
-#### Membership Management
-
-| Method | Endpoint | Description | Status Codes |
-|--------|----------|-------------|-------------|
-| `GET` | `/api/memberships` | Get all memberships | 200: Success |
-| `GET` | `/api/memberships/{orgId}/{userId}` | Get specific membership | 200: Found, 404: Not found |
-| `GET` | `/api/memberships/organization/{orgId}` | Get memberships by organization | 200: Success |
-| `GET` | `/api/memberships/user/{userId}` | Get memberships by user | 200: Success |
-| `GET` | `/api/memberships/status/{status}` | Get memberships by status | 200: Success |
-| `GET` | `/api/memberships/{orgId}/{userId}/exists` | Check membership existence | 200: Boolean result |
-| `GET` | `/api/memberships/organization/{orgId}/active-count` | Count active members | 200: Count |
-| `GET` | `/api/memberships/user/{userId}/count` | Count user memberships | 200: Count |
-| `POST` | `/api/memberships` | Create new membership | 200: Created, 400: Invalid data, 409: Exists |
-| `PUT` | `/api/memberships/{orgId}/{userId}/status` | Update membership status | 200: Updated, 400: Invalid data, 404: Not found |
-| `DELETE` | `/api/memberships/{orgId}/{userId}` | Delete membership | 200: Deleted, 404: Not found |
-
-**Request/Response Examples:**
-
-**Create Membership:**
-```bash
-curl -X POST http://localhost:8080/api/memberships \
-  -H "Content-Type: application/json" \
-  -d '{
-    "orgId": "org-uuid",
-    "userId": "user-uuid",
-    "status": "INVITED"
-  }'
-```
-
-**Response (200):**
-```json
-{
-  "orgId": "org-uuid",
-  "userId": "user-uuid",
-  "status": "INVITED",
-  "createdAt": "2024-01-01T00:00:00Z"
-}
-```
-
-**Update Membership Status:**
-```bash
-curl -X PUT http://localhost:8080/api/memberships/org-uuid/user-uuid/status \
-  -H "Content-Type: application/json" \
-  -d '{
-    "status": "ACTIVE"
-  }'
-```
-
-**Valid Membership Status Values:**
-- `ACTIVE` - User is an active member
-- `INVITED` - User has been invited but not yet accepted
-- `SUSPENDED` - User's membership has been suspended
-
-**Side Effects:** Membership operations modify the relationship between users and organizations
-
-### API Call Ordering Requirements
-
-**Required Order:**
+**API Call Ordering Requirements:**
 1. **Users must be created before organizations** - Organizations require a valid `createdBy` user ID
 2. **Users and organizations must exist before memberships** - Memberships require valid user and organization IDs
 
-**Forbidden Orders:**
-- Cannot create organizations without existing users
-- Cannot create memberships without existing users and organizations
-- Cannot update membership status to ACTIVE/SUSPENDED without valid membership
-
-### Error Codes
-
-| Status Code | Description | Common Causes |
-|-------------|-------------|---------------|
-| 200 | Success | Request completed successfully |
-| 201 | Created | Resource created successfully |
-| 204 | No Content | Resource deleted successfully |
-| 400 | Bad Request | Invalid request data or parameters |
-| 404 | Not Found | Resource not found |
-| 409 | Conflict | Resource already exists or constraint violation |
+For complete API documentation including all endpoints, request/response schemas, and examples, see the [REST API Documentation](github_resources/api-docs.html).
 
 ## 🏗️ Project Structure
 
@@ -386,6 +274,46 @@ activity-scheduler/
 └── pom.xml
 ```
 
+## 📝 Database Schema
+
+### Users Table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | CHAR(36) | Primary key (UUID) |
+| `email` | VARCHAR(320) | User email (unique) |
+| `display_name` | VARCHAR(255) | User display name |
+| `is_active` | BOOLEAN | Account status |
+| `created_at` | TIMESTAMP | Creation timestamp |
+
+### Organizations Table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | CHAR(36) | Primary key (UUID) |
+| `name` | VARCHAR(255) | Organization name (unique) |
+| `created_by` | VARCHAR(36) | User ID of creator (foreign key) |
+| `created_at` | TIMESTAMP | Creation timestamp |
+
+### Memberships Table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `org_id` | CHAR(36) | Organization ID (composite primary key) |
+| `user_id` | CHAR(36) | User ID (composite primary key) |
+| `status` | ENUM | Membership status (ACTIVE, INVITED, SUSPENDED) |
+| `created_at` | TIMESTAMP | Creation timestamp |
+
+**Note:** The `memberships` table uses a composite primary key (`org_id`, `user_id`) to ensure unique user-organization relationships.
+
+### Membership Status Values
+
+| Status | Description |
+|--------|-------------|
+| `ACTIVE` | User is an active member of the organization |
+| `INVITED` | User has been invited but hasn't accepted yet |
+| `SUSPENDED` | User's membership has been suspended |
+
 ## 🧪 Testing
 
 ### Run Tests
@@ -418,18 +346,26 @@ open target/site/jacoco/index.html
 ### Code Quality Checks
 
 ```bash
+# Format code (Google Java Format)
+mvn fmt:format
+
 # Checkstyle (Google Java Style Guide)
 mvn checkstyle:check
 
 # PMD (Static code analysis)
 mvn pmd:check
 
-# Format code (Google Java Format)
-mvn fmt:format
-
 # Run all quality checks
 mvn clean compile test checkstyle:check pmd:check
 ```
+
+Below shows what the screenshots of successful checks:
+1. Checkstyle
+![checkstyle_img](./github_resources/checkstyle.png)
+2. PMD static code analysis
+![pmd_img](./github_resources/pmd.png)
+3. Testing
+![testing_img](./github_resources/testing.png)
 
 ### Test Coverage
 
@@ -437,6 +373,8 @@ The project uses JaCoCo for code coverage reporting:
 - **Target Coverage:** 80%+ line coverage
 - **Report Location:** `target/site/jacoco/index.html`
 - **Coverage includes:** All main source files excluding generated code
+- **Example JaCoCo report**
+![jacoco_img](./github_resources/jacoco.png)
 
 ## 📊 Code Quality & Coverage
 
@@ -499,46 +437,6 @@ jobs:
 - Ensures code quality standards
 - Caches Maven dependencies for faster builds
 
-## 📝 Database Schema
-
-### Users Table
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | CHAR(36) | Primary key (UUID) |
-| `email` | VARCHAR(320) | User email (unique) |
-| `display_name` | VARCHAR(255) | User display name |
-| `is_active` | BOOLEAN | Account status |
-| `created_at` | TIMESTAMP | Creation timestamp |
-
-### Organizations Table
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | CHAR(36) | Primary key (UUID) |
-| `name` | VARCHAR(255) | Organization name (unique) |
-| `created_by` | VARCHAR(36) | User ID of creator (foreign key) |
-| `created_at` | TIMESTAMP | Creation timestamp |
-
-### Memberships Table
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `org_id` | CHAR(36) | Organization ID (composite primary key) |
-| `user_id` | CHAR(36) | User ID (composite primary key) |
-| `status` | ENUM | Membership status (ACTIVE, INVITED, SUSPENDED) |
-| `created_at` | TIMESTAMP | Creation timestamp |
-
-**Note:** The `memberships` table uses a composite primary key (`org_id`, `user_id`) to ensure unique user-organization relationships.
-
-### Membership Status Values
-
-| Status | Description |
-|--------|-------------|
-| `ACTIVE` | User is an active member of the organization |
-| `INVITED` | User has been invited but hasn't accepted yet |
-| `SUSPENDED` | User's membership has been suspended |
-
 ## 🔧 Configuration
 
 ### Configuration Files
@@ -558,9 +456,9 @@ We do not wish to expose our db configuration in a public GitHub repository
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://{your_db_external_ip}:3306/{your_database_name}
-    username: {your_user_name}
-    password: {your_pass_word}
+    url: jdbc:mysql://{db_external_ip}/{db_name}
+    username: {db_username}
+    password: {db_password}
   jpa:
     hibernate:
       ddl-auto: none
@@ -580,7 +478,6 @@ management:
   endpoint:
     health:
       show-details: always
-
 info:
   build:
     name: activity-scheduler
@@ -591,6 +488,27 @@ info:
 
 server:
   port: 8080
+
+# Logging Configuration
+logging:
+  level:
+    com.example.activityscheduler: INFO
+    org.springframework.web: DEBUG
+  file:
+    name: logs/activity-scheduler.log
+    max-size: 10MB
+    max-history: 5
+    total-size-cap: 50MB
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      file-name-pattern: logs/activity-scheduler.%d{yyyy-MM-dd}.%i.log
+      max-file-size: 10MB
+      max-history: 5
+      total-size-cap: 50MB
+
 ```
 
 ### Environment Variables
@@ -618,14 +536,6 @@ server:
 **PMD:** Static code analysis with default rules
 **JaCoCo:** Code coverage reporting with 80%+ target
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -648,11 +558,11 @@ This project utilized various AI tools to assist in development, testing, and do
   - Test case scenarios
   - Documentation templates
 
-**2. Cursor AI (Free Tier)**
-- **Source**: Cursor IDE with free tier access
+**2. Cursor AI (Education)**
+- **Source**: Cursor IDE with education access
 - **Usage**: Code refactoring, documentation generation, and README updates
 - **Prompts**:
-  - "Generate comprehensive API documentation"
+  - "Tell me how to generate static Java API and REST API documentations"
   - "Create database schema documentation"
   - "Update README with current project structure"
 - **Generated Content**:
@@ -672,21 +582,5 @@ to include an overall summary of our project.
 
 - **AlexZhu2** - *User, Organization, Membership Development* - [AlexZhu2](https://github.com/AlexZhu2)
 - **YiliYu2002** - *Database Management, Product Manager* - [YiliYu2002](https://github.com/YiliYu2002)
-
-## 🙏 Acknowledgments
-
-- Spring Boot team for the excellent framework
-- OpenAPI community for API documentation standards
-- All contributors and testers
-
----
-
-## 📞 Support
-
-If you have any questions or need help, please:
-
-1. Check the [API Documentation](http://localhost:8080/swagger-ui.html)
-2. Review the [Issues](../../issues) page
-3. Create a new issue if needed
-
-**Happy Coding! 🎉**
+- **Doglily3** - *Organization Development* - [Doglily3](https://github.com/Doglily3)
+- **jieji09** - *Event Development* - [jieji09](https://github.com/jieji09)
