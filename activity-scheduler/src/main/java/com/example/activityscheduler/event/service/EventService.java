@@ -2,7 +2,9 @@ package com.example.activityscheduler.event.service;
 
 import com.example.activityscheduler.event.model.Event;
 import com.example.activityscheduler.event.repository.EventRepository;
+import com.example.activityscheduler.membership.service.MembershipService;
 import com.example.activityscheduler.organization.service.OrganizationService;
+import com.example.activityscheduler.user.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -20,30 +22,47 @@ public class EventService {
   private static final Logger logger = Logger.getLogger(EventService.class.getName());
   private final EventRepository eventRepository;
   private final OrganizationService organizationService;
+  private final UserRepository userRepository;
+  private final MembershipService membershipService;
 
   /**
-   * Constructs an EventService with the given repository and organization service.
+   * Constructs an EventService with the given repository, organization service, user repository,
+   * and membership service.
    *
    * @param eventRepository the event repository
    * @param organizationService the organization service
+   * @param userRepository the user repository
+   * @param membershipService the membership service
    */
-  public EventService(EventRepository eventRepository, OrganizationService organizationService) {
+  public EventService(
+      EventRepository eventRepository,
+      OrganizationService organizationService,
+      UserRepository userRepository,
+      MembershipService membershipService) {
     this.eventRepository = eventRepository;
     this.organizationService = organizationService;
+    this.userRepository = userRepository;
+    this.membershipService = membershipService;
   }
 
   /**
-   * Creates a new event after validating organization exists.
+   * Creates a new event after validating organization exists, user exists (if provided), and user
+   * is a member of the organization.
    *
    * @param event the event to create
    * @return the created event
-   * @throws IllegalArgumentException if organization does not exist or invalid data
+   * @throws IllegalArgumentException if organization does not exist, user does not exist, user is
+   *     not a member of the organization, or invalid data
    */
   public Event createEvent(Event event) {
     logger.info("Creating new event: " + (event != null ? event.getTitle() : "null"));
     validateEvent(event);
     if (event != null) {
       validateOrganizationExists(event.getOrgId());
+      if (event.getCreatedBy() != null && !event.getCreatedBy().trim().isEmpty()) {
+        validateUserExists(event.getCreatedBy());
+        validateUserIsOrganizationMember(event.getCreatedBy(), event.getOrgId());
+      }
       Event savedEvent = eventRepository.save(event);
       logger.info("Successfully created event with ID: " + savedEvent.getId());
       return savedEvent;
@@ -52,12 +71,14 @@ public class EventService {
   }
 
   /**
-   * Updates an existing event after validating organization exists.
+   * Updates an existing event after validating organization exists, user exists (if provided), and
+   * user is a member of the organization.
    *
    * @param eventId the ID of the event to update
    * @param updatedEvent the updated event data
    * @return the updated event
-   * @throws IllegalArgumentException if organization does not exist or invalid data
+   * @throws IllegalArgumentException if organization does not exist, user does not exist, user is
+   *     not a member of the organization, or invalid data
    */
   public Event updateEvent(String eventId, Event updatedEvent) {
     logger.info("Updating event with ID: " + eventId);
@@ -68,6 +89,10 @@ public class EventService {
 
     validateEvent(updatedEvent);
     validateOrganizationExists(updatedEvent.getOrgId());
+    if (updatedEvent.getCreatedBy() != null && !updatedEvent.getCreatedBy().trim().isEmpty()) {
+      validateUserExists(updatedEvent.getCreatedBy());
+      validateUserIsOrganizationMember(updatedEvent.getCreatedBy(), updatedEvent.getOrgId());
+    }
 
     // Update the existing event with new data
     existingEvent.setTitle(updatedEvent.getTitle());
@@ -236,5 +261,64 @@ public class EventService {
     }
 
     logger.fine("Organization validation passed for: " + orgId);
+  }
+
+  /**
+   * Validates that a user exists.
+   *
+   * @param userId the user ID to validate
+   * @throws IllegalArgumentException if the user does not exist
+   */
+  private void validateUserExists(String userId) {
+    logger.fine("Validating user exists: " + userId);
+    if (userId == null || userId.trim().isEmpty()) {
+      logger.severe("User validation failed: user ID is null or empty");
+      throw new IllegalArgumentException("User ID cannot be null or empty");
+    }
+
+    if (!userRepository.existsById(userId)) {
+      logger.severe("User validation failed: user with ID '" + userId + "' does not exist");
+      throw new IllegalArgumentException("User with ID '" + userId + "' does not exist");
+    }
+
+    logger.fine("User validation passed for: " + userId);
+  }
+
+  /**
+   * Validates that a user is a member of the specified organization.
+   *
+   * @param userId the user ID to validate
+   * @param orgId the organization ID to validate membership for
+   * @throws IllegalArgumentException if the user is not a member of the organization
+   */
+  private void validateUserIsOrganizationMember(String userId, String orgId) {
+    logger.fine("Validating user " + userId + " is a member of organization " + orgId);
+    if (userId == null || userId.trim().isEmpty()) {
+      logger.severe("Membership validation failed: user ID is null or empty");
+      throw new IllegalArgumentException("User ID cannot be null or empty");
+    }
+
+    if (orgId == null || orgId.trim().isEmpty()) {
+      logger.severe("Membership validation failed: organization ID is null or empty");
+      throw new IllegalArgumentException("Organization ID cannot be null or empty");
+    }
+
+    if (!membershipService.existsMembership(orgId, userId)) {
+      logger.severe(
+          "Membership validation failed: user '"
+              + userId
+              + "' is not a member of organization '"
+              + orgId
+              + "'");
+      throw new IllegalArgumentException(
+          "User '"
+              + userId
+              + "' is not a member of organization '"
+              + orgId
+              + "'. Only organization members can create events.");
+    }
+
+    logger.fine(
+        "Membership validation passed: user " + userId + " is a member of organization " + orgId);
   }
 }

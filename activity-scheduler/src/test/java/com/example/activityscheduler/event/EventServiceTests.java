@@ -7,8 +7,10 @@ import static org.mockito.Mockito.*;
 import com.example.activityscheduler.event.model.Event;
 import com.example.activityscheduler.event.repository.EventRepository;
 import com.example.activityscheduler.event.service.EventService;
+import com.example.activityscheduler.membership.service.MembershipService;
 import com.example.activityscheduler.organization.model.Organization;
 import com.example.activityscheduler.organization.service.OrganizationService;
+import com.example.activityscheduler.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +26,8 @@ class EventServiceTests {
 
   @Mock private EventRepository eventRepository;
   @Mock private OrganizationService organizationService;
+  @Mock private UserRepository userRepository;
+  @Mock private MembershipService membershipService;
   private EventService eventService;
   private Event testEvent;
   private Organization testOrganization;
@@ -32,7 +36,8 @@ class EventServiceTests {
 
   @BeforeEach
   void setUp() {
-    eventService = new EventService(eventRepository, organizationService);
+    eventService =
+        new EventService(eventRepository, organizationService, userRepository, membershipService);
     startTime = LocalDateTime.of(2024, 1, 15, 10, 0);
     endTime = LocalDateTime.of(2024, 1, 15, 11, 0);
     testEvent =
@@ -53,6 +58,8 @@ class EventServiceTests {
   void testCreateEvent_Success() {
     when(organizationService.getOrganizationById("org-123"))
         .thenReturn(Optional.of(testOrganization));
+    when(userRepository.existsById("user-789")).thenReturn(true);
+    when(membershipService.existsMembership("org-123", "user-789")).thenReturn(true);
     when(eventRepository.save(any(Event.class))).thenReturn(testEvent);
 
     Event result = eventService.createEvent(testEvent);
@@ -60,7 +67,66 @@ class EventServiceTests {
     assertNotNull(result);
     assertEquals(testEvent.getId(), result.getId());
     verify(organizationService).getOrganizationById("org-123");
+    verify(userRepository).existsById("user-789");
+    verify(membershipService).existsMembership("org-123", "user-789");
     verify(eventRepository).save(testEvent);
+  }
+
+  @Test
+  void testCreateEvent_WithoutCreatedBy() {
+    Event eventWithoutCreator = new Event();
+    eventWithoutCreator.setTitle("Test Event");
+    eventWithoutCreator.setOrgId("org-123");
+    eventWithoutCreator.setStartAt(startTime);
+    eventWithoutCreator.setEndAt(endTime);
+    eventWithoutCreator.setCreatedBy(null);
+
+    when(organizationService.getOrganizationById("org-123"))
+        .thenReturn(Optional.of(testOrganization));
+    when(eventRepository.save(any(Event.class))).thenReturn(eventWithoutCreator);
+
+    Event result = eventService.createEvent(eventWithoutCreator);
+
+    assertNotNull(result);
+    verify(organizationService).getOrganizationById("org-123");
+    verify(userRepository, never()).existsById(anyString());
+    verify(membershipService, never()).existsMembership(anyString(), anyString());
+    verify(eventRepository).save(eventWithoutCreator);
+  }
+
+  @Test
+  void testCreateEvent_UserNotFound() {
+    when(organizationService.getOrganizationById("org-123"))
+        .thenReturn(Optional.of(testOrganization));
+    when(userRepository.existsById("user-789")).thenReturn(false);
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(testEvent));
+
+    assertTrue(exception.getMessage().contains("User with ID 'user-789' does not exist"));
+    verify(organizationService).getOrganizationById("org-123");
+    verify(userRepository).existsById("user-789");
+    verify(membershipService, never()).existsMembership(anyString(), anyString());
+    verify(eventRepository, never()).save(any(Event.class));
+  }
+
+  @Test
+  void testCreateEvent_UserNotMemberOfOrganization() {
+    when(organizationService.getOrganizationById("org-123"))
+        .thenReturn(Optional.of(testOrganization));
+    when(userRepository.existsById("user-789")).thenReturn(true);
+    when(membershipService.existsMembership("org-123", "user-789")).thenReturn(false);
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(testEvent));
+
+    assertTrue(
+        exception.getMessage().contains("is not a member of organization")
+            || exception.getMessage().contains("Only organization members can create events"));
+    verify(organizationService).getOrganizationById("org-123");
+    verify(userRepository).existsById("user-789");
+    verify(membershipService).existsMembership("org-123", "user-789");
+    verify(eventRepository, never()).save(any(Event.class));
   }
 
   @Test
@@ -134,6 +200,8 @@ class EventServiceTests {
     when(eventRepository.findById("event-123")).thenReturn(Optional.of(existingEvent));
     when(organizationService.getOrganizationById("org-123"))
         .thenReturn(Optional.of(testOrganization));
+    when(userRepository.existsById("user-789")).thenReturn(true);
+    when(membershipService.existsMembership("org-123", "user-789")).thenReturn(true);
     when(eventRepository.save(any(Event.class))).thenReturn(existingEvent);
 
     Event result = eventService.updateEvent("event-123", testEvent);
@@ -141,7 +209,58 @@ class EventServiceTests {
     assertNotNull(result);
     assertEquals("event-123", result.getId());
     verify(organizationService).getOrganizationById("org-123");
+    verify(userRepository).existsById("user-789");
+    verify(membershipService).existsMembership("org-123", "user-789");
     verify(eventRepository).save(existingEvent);
+  }
+
+  @Test
+  void testUpdateEvent_UserNotFound() {
+    Event existingEvent = new Event();
+    existingEvent.setId("event-123");
+    existingEvent.setTitle("Original Event");
+    existingEvent.setOrgId("org-123");
+
+    when(eventRepository.findById("event-123")).thenReturn(Optional.of(existingEvent));
+    when(organizationService.getOrganizationById("org-123"))
+        .thenReturn(Optional.of(testOrganization));
+    when(userRepository.existsById("user-789")).thenReturn(false);
+
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class, () -> eventService.updateEvent("event-123", testEvent));
+
+    assertTrue(exception.getMessage().contains("User with ID 'user-789' does not exist"));
+    verify(organizationService).getOrganizationById("org-123");
+    verify(userRepository).existsById("user-789");
+    verify(membershipService, never()).existsMembership(anyString(), anyString());
+    verify(eventRepository, never()).save(any(Event.class));
+  }
+
+  @Test
+  void testUpdateEvent_UserNotMemberOfOrganization() {
+    Event existingEvent = new Event();
+    existingEvent.setId("event-123");
+    existingEvent.setTitle("Original Event");
+    existingEvent.setOrgId("org-123");
+
+    when(eventRepository.findById("event-123")).thenReturn(Optional.of(existingEvent));
+    when(organizationService.getOrganizationById("org-123"))
+        .thenReturn(Optional.of(testOrganization));
+    when(userRepository.existsById("user-789")).thenReturn(true);
+    when(membershipService.existsMembership("org-123", "user-789")).thenReturn(false);
+
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class, () -> eventService.updateEvent("event-123", testEvent));
+
+    assertTrue(
+        exception.getMessage().contains("is not a member of organization")
+            || exception.getMessage().contains("Only organization members can create events"));
+    verify(organizationService).getOrganizationById("org-123");
+    verify(userRepository).existsById("user-789");
+    verify(membershipService).existsMembership("org-123", "user-789");
+    verify(eventRepository, never()).save(any(Event.class));
   }
 
   @Test
