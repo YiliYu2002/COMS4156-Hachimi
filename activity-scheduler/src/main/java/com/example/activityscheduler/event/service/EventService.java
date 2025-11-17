@@ -2,7 +2,7 @@ package com.example.activityscheduler.event.service;
 
 import com.example.activityscheduler.event.model.Event;
 import com.example.activityscheduler.event.repository.EventRepository;
-import java.time.LocalDateTime;
+import com.example.activityscheduler.organization.service.OrganizationService;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service class for managing Event entities and providing business logic for event operations,
- * including conflict detection and availability checking.
+ * Service class for managing Event entities and providing business logic for event operations.
+ * Events are associated with organizations and validated against organization existence.
  */
 @Service
 @Transactional
@@ -19,39 +19,45 @@ public class EventService {
 
   private static final Logger logger = Logger.getLogger(EventService.class.getName());
   private final EventRepository eventRepository;
+  private final OrganizationService organizationService;
 
   /**
-   * Constructs an EventService with the given repository.
+   * Constructs an EventService with the given repository and organization service.
    *
    * @param eventRepository the event repository
+   * @param organizationService the organization service
    */
-  public EventService(EventRepository eventRepository) {
+  public EventService(EventRepository eventRepository, OrganizationService organizationService) {
     this.eventRepository = eventRepository;
+    this.organizationService = organizationService;
   }
 
   /**
-   * Creates a new event after validating for conflicts.
+   * Creates a new event after validating organization exists.
    *
    * @param event the event to create
    * @return the created event
-   * @throws IllegalArgumentException if there are time conflicts or invalid data
+   * @throws IllegalArgumentException if organization does not exist or invalid data
    */
   public Event createEvent(Event event) {
     logger.info("Creating new event: " + (event != null ? event.getTitle() : "null"));
     validateEvent(event);
-    checkForConflicts(event, null);
-    Event savedEvent = eventRepository.save(event);
-    logger.info("Successfully created event with ID: " + savedEvent.getId());
-    return savedEvent;
+    if (event != null) {
+      validateOrganizationExists(event.getOrgId());
+      Event savedEvent = eventRepository.save(event);
+      logger.info("Successfully created event with ID: " + savedEvent.getId());
+      return savedEvent;
+    }
+    throw new IllegalArgumentException("Event cannot be null");
   }
 
   /**
-   * Updates an existing event after validating for conflicts.
+   * Updates an existing event after validating organization exists.
    *
    * @param eventId the ID of the event to update
    * @param updatedEvent the updated event data
    * @return the updated event
-   * @throws IllegalArgumentException if there are time conflicts or invalid data
+   * @throws IllegalArgumentException if organization does not exist or invalid data
    */
   public Event updateEvent(String eventId, Event updatedEvent) {
     logger.info("Updating event with ID: " + eventId);
@@ -61,7 +67,7 @@ public class EventService {
             .orElseThrow(() -> new IllegalArgumentException("Event not found with ID: " + eventId));
 
     validateEvent(updatedEvent);
-    checkForConflicts(updatedEvent, eventId);
+    validateOrganizationExists(updatedEvent.getOrgId());
 
     // Update the existing event with new data
     existingEvent.setTitle(updatedEvent.getTitle());
@@ -70,6 +76,8 @@ public class EventService {
     existingEvent.setEndAt(updatedEvent.getEndAt());
     existingEvent.setCapacity(updatedEvent.getCapacity());
     existingEvent.setLocation(updatedEvent.getLocation());
+    existingEvent.setOrgId(updatedEvent.getOrgId());
+    existingEvent.setCreatedBy(updatedEvent.getCreatedBy());
 
     Event savedEvent = eventRepository.save(existingEvent);
     logger.info("Successfully updated event with ID: " + savedEvent.getId());
@@ -95,58 +103,56 @@ public class EventService {
   }
 
   /**
-   * Checks for time conflicts when creating or updating an event.
+   * Retrieves all events belonging to a specific organization.
    *
-   * @param event the event to check for conflicts
-   * @param excludeEventId optional event ID to exclude from conflict check (for updates)
-   * @throws IllegalArgumentException if conflicts are found
+   * @param orgId the organization ID
+   * @return a list of events belonging to the organization
+   * @throws IllegalArgumentException if organization does not exist
    */
-  public void checkForConflicts(Event event, String excludeEventId) {
-    logger.fine(
-        "Checking for conflicts for event: "
-            + event.getTitle()
-            + " from "
-            + event.getStartAt()
-            + " to "
-            + event.getEndAt());
-    List<Event> conflictingEvents =
-        eventRepository.findConflictingEvents(event.getStartAt(), event.getEndAt(), excludeEventId);
-
-    if (!conflictingEvents.isEmpty()) {
-      logger.warning(
-          "Time conflict detected for event: "
-              + event.getTitle()
-              + " with "
-              + conflictingEvents.size()
-              + " conflicting events");
-      StringBuilder conflictMessage =
-          new StringBuilder("Time conflict detected with existing events: ");
-      for (Event conflict : conflictingEvents) {
-        conflictMessage
-            .append(conflict.getId())
-            .append(" (")
-            .append(conflict.getTitle())
-            .append("), ");
-      }
-      throw new IllegalArgumentException(conflictMessage.toString());
-    } else {
-      logger.fine("No conflicts found for event: " + event.getTitle());
-    }
+  @Transactional(readOnly = true)
+  public List<Event> getEventsByOrganization(String orgId) {
+    logger.info("Retrieving events for organization: " + orgId);
+    validateOrganizationExists(orgId);
+    List<Event> events = eventRepository.findByOrgId(orgId);
+    logger.info("Retrieved " + events.size() + " events for organization: " + orgId);
+    return events;
   }
 
   /**
-   * Finds all conflicting events for a given time range.
+   * Retrieves all events created by a specific user.
    *
-   * @param startTime the start time to check
-   * @param endTime the end time to check
-   * @return a list of conflicting events
+   * @param userId the user ID
+   * @return a list of events created by the user
    */
   @Transactional(readOnly = true)
-  public List<Event> findConflictingEvents(LocalDateTime startTime, LocalDateTime endTime) {
-    logger.fine("Finding conflicting events from " + startTime + " to " + endTime);
-    List<Event> conflicts = eventRepository.findConflictingEvents(startTime, endTime, null);
-    logger.fine("Found " + conflicts.size() + " conflicting events");
-    return conflicts;
+  public List<Event> getEventsByUser(String userId) {
+    logger.info("Retrieving events created by user: " + userId);
+    List<Event> events = eventRepository.findByCreatedBy(userId);
+    logger.info("Retrieved " + events.size() + " events created by user: " + userId);
+    return events;
+  }
+
+  /**
+   * Retrieves all events belonging to a specific organization and created by a specific user.
+   *
+   * @param orgId the organization ID
+   * @param userId the user ID
+   * @return a list of events matching the criteria
+   * @throws IllegalArgumentException if organization does not exist
+   */
+  @Transactional(readOnly = true)
+  public List<Event> getEventsByOrganizationAndUser(String orgId, String userId) {
+    logger.info("Retrieving events for organization: " + orgId + " and user: " + userId);
+    validateOrganizationExists(orgId);
+    List<Event> events = eventRepository.findByOrgIdAndCreatedBy(orgId, userId);
+    logger.info(
+        "Retrieved "
+            + events.size()
+            + " events for organization: "
+            + orgId
+            + " and user: "
+            + userId);
+    return events;
   }
 
   /**
@@ -183,6 +189,11 @@ public class EventService {
       throw new IllegalArgumentException("Event title is required");
     }
 
+    if (event.getOrgId() == null || event.getOrgId().trim().isEmpty()) {
+      logger.severe("Event validation failed: organization ID is null or empty");
+      throw new IllegalArgumentException("Organization ID is required");
+    }
+
     if (event.getStartAt() == null || event.getEndAt() == null) {
       logger.severe("Event validation failed: start or end time is null");
       throw new IllegalArgumentException("Start and end times are required");
@@ -203,5 +214,27 @@ public class EventService {
     }
 
     logger.fine("Event validation passed for: " + event.getTitle());
+  }
+
+  /**
+   * Validates that an organization exists.
+   *
+   * @param orgId the organization ID to validate
+   * @throws IllegalArgumentException if the organization does not exist
+   */
+  private void validateOrganizationExists(String orgId) {
+    logger.fine("Validating organization exists: " + orgId);
+    if (orgId == null || orgId.trim().isEmpty()) {
+      logger.severe("Organization validation failed: organization ID is null or empty");
+      throw new IllegalArgumentException("Organization ID cannot be null or empty");
+    }
+
+    if (organizationService.getOrganizationById(orgId).isEmpty()) {
+      logger.severe(
+          "Organization validation failed: organization with ID '" + orgId + "' does not exist");
+      throw new IllegalArgumentException("Organization with ID '" + orgId + "' does not exist");
+    }
+
+    logger.fine("Organization validation passed for: " + orgId);
   }
 }

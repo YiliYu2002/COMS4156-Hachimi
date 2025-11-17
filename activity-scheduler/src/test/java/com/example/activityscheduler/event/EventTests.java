@@ -25,6 +25,7 @@ class EventTests {
             endTime,
             10,
             "Conference Room A",
+            "org-123",
             "user-789");
   }
 
@@ -37,6 +38,7 @@ class EventTests {
     assertEquals(endTime, event.getEndAt());
     assertEquals(10, event.getCapacity());
     assertEquals("Conference Room A", event.getLocation());
+    assertEquals("org-123", event.getOrgId());
     assertEquals("user-789", event.getCreatedBy());
     assertNotNull(event.getCreatedAt());
   }
@@ -64,12 +66,14 @@ class EventTests {
     event.setDescription("Updated Description");
     event.setCapacity(20);
     event.setLocation("New Location");
+    event.setOrgId("new-org");
     event.setCreatedBy("new-user");
 
     assertEquals("Updated Event", event.getTitle());
     assertEquals("Updated Description", event.getDescription());
     assertEquals(20, event.getCapacity());
     assertEquals("New Location", event.getLocation());
+    assertEquals("new-org", event.getOrgId());
     assertEquals("new-user", event.getCreatedBy());
   }
 

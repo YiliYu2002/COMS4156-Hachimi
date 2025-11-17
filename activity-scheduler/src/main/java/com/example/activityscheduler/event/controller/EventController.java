@@ -8,11 +8,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,13 +20,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
  * REST controller for managing Event entities. Provides HTTP endpoints for event operations
- * including CRUD operations, conflict detection, and availability checking.
+ * including CRUD operations and querying events by organization and user.
  */
 @RestController
 @RequestMapping("/api/events")
@@ -160,32 +157,81 @@ public class EventController {
   }
 
   /**
-   * Checks for time conflicts in a specific time range.
+   * Retrieves all events belonging to a specific organization.
    *
-   * @param startTime the start time
-   * @param endTime the end time
-   * @return a list of conflicting events
+   * @param organizationId the organization ID
+   * @return a list of events belonging to the organization
    */
   @Operation(
-      summary = "Check for time conflicts",
-      description = "Finds all events that conflict with a given time range")
+      summary = "Get events by organization",
+      description = "Retrieves all events belonging to a specific organization")
   @ApiResponses(
       value = {
-        @ApiResponse(responseCode = "200", description = "Conflict check completed successfully")
+        @ApiResponse(responseCode = "200", description = "Events retrieved successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid organization ID")
       })
-  @GetMapping("/conflicts")
-  public List<Event> checkForConflicts(
-      @Parameter(description = "Start time (ISO format)")
-          @RequestParam
-          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-          LocalDateTime startTime,
-      @Parameter(description = "End time (ISO format)")
-          @RequestParam
-          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-          LocalDateTime endTime) {
-    logger.fine("Received request to check conflicts from " + startTime + " to " + endTime);
-    List<Event> conflicts = eventService.findConflictingEvents(startTime, endTime);
-    logger.fine("Found " + conflicts.size() + " conflicting events");
-    return conflicts;
+  @GetMapping("/organization/{organizationId}")
+  public List<Event> getEventsByOrganization(
+      @Parameter(description = "Organization ID") @PathVariable String organizationId) {
+    logger.info("Received request to get events for organization: " + organizationId);
+    List<Event> events = eventService.getEventsByOrganization(organizationId);
+    logger.info("Retrieved " + events.size() + " events for organization: " + organizationId);
+    return events;
+  }
+
+  /**
+   * Retrieves all events created by a specific user.
+   *
+   * @param userId the user ID
+   * @return a list of events created by the user
+   */
+  @Operation(
+      summary = "Get events by user",
+      description = "Retrieves all events created by a specific user")
+  @ApiResponses(
+      value = {@ApiResponse(responseCode = "200", description = "Events retrieved successfully")})
+  @GetMapping("/user/{userId}")
+  public List<Event> getEventsByUser(
+      @Parameter(description = "User ID") @PathVariable String userId) {
+    logger.info("Received request to get events created by user: " + userId);
+    List<Event> events = eventService.getEventsByUser(userId);
+    logger.info("Retrieved " + events.size() + " events created by user: " + userId);
+    return events;
+  }
+
+  /**
+   * Retrieves all events belonging to a specific organization and created by a specific user.
+   *
+   * @param organizationId the organization ID
+   * @param userId the user ID
+   * @return a list of events matching the criteria
+   */
+  @Operation(
+      summary = "Get events by organization and user",
+      description =
+          "Retrieves all events belonging to a specific organization and created by a specific user")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Events retrieved successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid organization ID")
+      })
+  @GetMapping("/organization/{organizationId}/user/{userId}")
+  public List<Event> getEventsByOrganizationAndUser(
+      @Parameter(description = "Organization ID") @PathVariable String organizationId,
+      @Parameter(description = "User ID") @PathVariable String userId) {
+    logger.info(
+        "Received request to get events for organization: "
+            + organizationId
+            + " and user: "
+            + userId);
+    List<Event> events = eventService.getEventsByOrganizationAndUser(organizationId, userId);
+    logger.info(
+        "Retrieved "
+            + events.size()
+            + " events for organization: "
+            + organizationId
+            + " and user: "
+            + userId);
+    return events;
   }
 }

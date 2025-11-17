@@ -44,7 +44,11 @@ public class Event {
   @Column(name = "location", length = 255)
   private String location;
 
-  @Column(name = "created_by", length = 255)
+  @NotNull
+  @Column(name = "org_id", nullable = false, length = 36)
+  private String orgId;
+
+  @Column(name = "created_by", length = 36)
   private String createdBy;
 
   @NotNull
@@ -65,7 +69,8 @@ public class Event {
    * @param endAt the event end time
    * @param capacity the event capacity
    * @param location the event location
-   * @param createdBy the user who created the event
+   * @param orgId the organization ID this event belongs to
+   * @param createdBy the user who created the event (can be null)
    */
   public Event(
       String title,
@@ -74,6 +79,7 @@ public class Event {
       LocalDateTime endAt,
       Integer capacity,
       String location,
+      String orgId,
       String createdBy) {
     this();
     this.title = title;
@@ -82,6 +88,7 @@ public class Event {
     this.endAt = endAt;
     this.capacity = capacity;
     this.location = location;
+    this.orgId = orgId;
     this.createdBy = createdBy;
   }
 
@@ -142,6 +149,14 @@ public class Event {
     this.location = location;
   }
 
+  public String getOrgId() {
+    return orgId;
+  }
+
+  public void setOrgId(String orgId) {
+    this.orgId = orgId;
+  }
+
   public String getCreatedBy() {
     return createdBy;
   }
@@ -187,6 +202,9 @@ public class Event {
         + capacity
         + ", location='"
         + location
+        + '\''
+        + ", orgId='"
+        + orgId
         + '\''
         + ", createdBy='"
         + createdBy

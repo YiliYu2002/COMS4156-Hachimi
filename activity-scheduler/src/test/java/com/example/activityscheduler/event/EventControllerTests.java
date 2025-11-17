@@ -50,6 +50,7 @@ class EventControllerTests {
             endTime,
             10,
             "Conference Room A",
+            "org-123",
             "user-789");
   }
 
@@ -73,6 +74,7 @@ class EventControllerTests {
   void testCreateEvent_Failure_InvalidTitle() throws Exception {
     Event invalidEvent = new Event();
     invalidEvent.setTitle(null);
+    invalidEvent.setOrgId("org-123");
     invalidEvent.setStartAt(startTime);
     invalidEvent.setEndAt(endTime);
 
@@ -160,19 +162,47 @@ class EventControllerTests {
   }
 
   @Test
-  void testCheckForConflicts() throws Exception {
-    List<Event> conflicts = Arrays.asList(testEvent);
-    when(eventService.findConflictingEvents(startTime, endTime)).thenReturn(conflicts);
+  void testGetEventsByOrganization_Success() throws Exception {
+    List<Event> events = Arrays.asList(testEvent);
+    when(eventService.getEventsByOrganization("org-123")).thenReturn(events);
 
     mockMvc
-        .perform(
-            get("/api/events/conflicts")
-                .param("startTime", startTime.toString())
-                .param("endTime", endTime.toString()))
+        .perform(get("/api/events/organization/org-123"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$[0].id").value(testEvent.getId()));
+        .andExpect(jsonPath("$[0].id").value(testEvent.getId()))
+        .andExpect(jsonPath("$[0].title").value("Test Event"));
 
-    verify(eventService).findConflictingEvents(startTime, endTime);
+    verify(eventService).getEventsByOrganization("org-123");
+  }
+
+  @Test
+  void testGetEventsByUser_Success() throws Exception {
+    List<Event> events = Arrays.asList(testEvent);
+    when(eventService.getEventsByUser("user-789")).thenReturn(events);
+
+    mockMvc
+        .perform(get("/api/events/user/user-789"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$[0].id").value(testEvent.getId()))
+        .andExpect(jsonPath("$[0].title").value("Test Event"));
+
+    verify(eventService).getEventsByUser("user-789");
+  }
+
+  @Test
+  void testGetEventsByOrganizationAndUser_Success() throws Exception {
+    List<Event> events = Arrays.asList(testEvent);
+    when(eventService.getEventsByOrganizationAndUser("org-123", "user-789")).thenReturn(events);
+
+    mockMvc
+        .perform(get("/api/events/organization/org-123/user/user-789"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$[0].id").value(testEvent.getId()))
+        .andExpect(jsonPath("$[0].title").value("Test Event"));
+
+    verify(eventService).getEventsByOrganizationAndUser("org-123", "user-789");
   }
 }

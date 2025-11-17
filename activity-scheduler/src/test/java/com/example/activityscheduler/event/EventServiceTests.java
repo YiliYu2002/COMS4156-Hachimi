@@ -7,9 +7,10 @@ import static org.mockito.Mockito.*;
 import com.example.activityscheduler.event.model.Event;
 import com.example.activityscheduler.event.repository.EventRepository;
 import com.example.activityscheduler.event.service.EventService;
+import com.example.activityscheduler.organization.model.Organization;
+import com.example.activityscheduler.organization.service.OrganizationService;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,14 +23,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class EventServiceTests {
 
   @Mock private EventRepository eventRepository;
+  @Mock private OrganizationService organizationService;
   private EventService eventService;
   private Event testEvent;
+  private Organization testOrganization;
   private LocalDateTime startTime;
   private LocalDateTime endTime;
 
   @BeforeEach
   void setUp() {
-    eventService = new EventService(eventRepository);
+    eventService = new EventService(eventRepository, organizationService);
     startTime = LocalDateTime.of(2024, 1, 15, 10, 0);
     endTime = LocalDateTime.of(2024, 1, 15, 11, 0);
     testEvent =
@@ -40,44 +43,56 @@ class EventServiceTests {
             endTime,
             10,
             "Conference Room A",
+            "org-123",
             "user-789");
+    testOrganization = new Organization("user-789", "Test Organization");
+    testOrganization.setId("org-123");
   }
 
   @Test
   void testCreateEvent_Success() {
-    when(eventRepository.findConflictingEvents(
-            any(LocalDateTime.class), any(LocalDateTime.class), isNull()))
-        .thenReturn(Collections.emptyList());
+    when(organizationService.getOrganizationById("org-123"))
+        .thenReturn(Optional.of(testOrganization));
     when(eventRepository.save(any(Event.class))).thenReturn(testEvent);
 
     Event result = eventService.createEvent(testEvent);
 
     assertNotNull(result);
     assertEquals(testEvent.getId(), result.getId());
+    verify(organizationService).getOrganizationById("org-123");
     verify(eventRepository).save(testEvent);
   }
 
   @Test
-  void testCreateEvent_TimeConflict() {
-    Event conflictingEvent = new Event();
-    conflictingEvent.setId("conflict-123");
-    conflictingEvent.setTitle("Conflicting Event");
-
-    when(eventRepository.findConflictingEvents(
-            any(LocalDateTime.class), any(LocalDateTime.class), isNull()))
-        .thenReturn(Arrays.asList(conflictingEvent));
+  void testCreateEvent_OrganizationNotFound() {
+    when(organizationService.getOrganizationById("org-123")).thenReturn(Optional.empty());
 
     IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(testEvent));
 
-    assertTrue(exception.getMessage().contains("Time conflict detected"));
+    assertTrue(exception.getMessage().contains("Organization with ID 'org-123' does not exist"));
     verify(eventRepository, never()).save(any(Event.class));
+  }
+
+  @Test
+  void testCreateEvent_NullOrgId() {
+    Event invalidEvent = new Event();
+    invalidEvent.setTitle("Test Event");
+    invalidEvent.setOrgId(null);
+    invalidEvent.setStartAt(startTime);
+    invalidEvent.setEndAt(endTime);
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(invalidEvent));
+
+    assertTrue(exception.getMessage().contains("Organization ID is required"));
   }
 
   @Test
   void testCreateEvent_InvalidTimeRange() {
     Event invalidEvent = new Event();
     invalidEvent.setTitle("Invalid Event");
+    invalidEvent.setOrgId("org-123");
     invalidEvent.setStartAt(endTime);
     invalidEvent.setEndAt(startTime);
 
@@ -91,6 +106,7 @@ class EventServiceTests {
   void testCreateEvent_NullTitle() {
     Event invalidEvent = new Event();
     invalidEvent.setTitle(null);
+    invalidEvent.setOrgId("org-123");
     invalidEvent.setStartAt(startTime);
     invalidEvent.setEndAt(endTime);
 
@@ -113,17 +129,18 @@ class EventServiceTests {
     Event existingEvent = new Event();
     existingEvent.setId("event-123");
     existingEvent.setTitle("Original Event");
+    existingEvent.setOrgId("org-123");
 
     when(eventRepository.findById("event-123")).thenReturn(Optional.of(existingEvent));
-    when(eventRepository.findConflictingEvents(
-            any(LocalDateTime.class), any(LocalDateTime.class), eq("event-123")))
-        .thenReturn(Collections.emptyList());
+    when(organizationService.getOrganizationById("org-123"))
+        .thenReturn(Optional.of(testOrganization));
     when(eventRepository.save(any(Event.class))).thenReturn(existingEvent);
 
     Event result = eventService.updateEvent("event-123", testEvent);
 
     assertNotNull(result);
     assertEquals("event-123", result.getId());
+    verify(organizationService).getOrganizationById("org-123");
     verify(eventRepository).save(existingEvent);
   }
 
@@ -178,13 +195,57 @@ class EventServiceTests {
   }
 
   @Test
-  void testFindConflictingEvents() {
-    List<Event> conflicts = Arrays.asList(testEvent);
-    when(eventRepository.findConflictingEvents(startTime, endTime, null)).thenReturn(conflicts);
+  void testGetEventsByOrganization_Success() {
+    List<Event> events = Arrays.asList(testEvent);
+    when(organizationService.getOrganizationById("org-123"))
+        .thenReturn(Optional.of(testOrganization));
+    when(eventRepository.findByOrgId("org-123")).thenReturn(events);
 
-    List<Event> result = eventService.findConflictingEvents(startTime, endTime);
+    List<Event> result = eventService.getEventsByOrganization("org-123");
 
     assertEquals(1, result.size());
     assertEquals(testEvent.getId(), result.get(0).getId());
+    verify(organizationService).getOrganizationById("org-123");
+    verify(eventRepository).findByOrgId("org-123");
+  }
+
+  @Test
+  void testGetEventsByOrganization_NotFound() {
+    when(organizationService.getOrganizationById("nonexistent")).thenReturn(Optional.empty());
+
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> eventService.getEventsByOrganization("nonexistent"));
+
+    assertTrue(
+        exception.getMessage().contains("Organization with ID 'nonexistent' does not exist"));
+  }
+
+  @Test
+  void testGetEventsByUser_Success() {
+    List<Event> events = Arrays.asList(testEvent);
+    when(eventRepository.findByCreatedBy("user-789")).thenReturn(events);
+
+    List<Event> result = eventService.getEventsByUser("user-789");
+
+    assertEquals(1, result.size());
+    assertEquals(testEvent.getId(), result.get(0).getId());
+    verify(eventRepository).findByCreatedBy("user-789");
+  }
+
+  @Test
+  void testGetEventsByOrganizationAndUser_Success() {
+    List<Event> events = Arrays.asList(testEvent);
+    when(organizationService.getOrganizationById("org-123"))
+        .thenReturn(Optional.of(testOrganization));
+    when(eventRepository.findByOrgIdAndCreatedBy("org-123", "user-789")).thenReturn(events);
+
+    List<Event> result = eventService.getEventsByOrganizationAndUser("org-123", "user-789");
+
+    assertEquals(1, result.size());
+    assertEquals(testEvent.getId(), result.get(0).getId());
+    verify(organizationService).getOrganizationById("org-123");
+    verify(eventRepository).findByOrgIdAndCreatedBy("org-123", "user-789");
   }
 }
