@@ -140,17 +140,21 @@ public class EventController {
    */
   @Operation(
       summary = "Delete an event",
-      description = "Deletes an event from the system. Only the event creator can delete the event.")
+      description =
+          "Deletes an event from the system. Only the event creator can delete the event.")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "204", description = "Event deleted successfully"),
-        @ApiResponse(responseCode = "403", description = "Forbidden: Only the event creator can delete the event"),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden: Only the event creator can delete the event"),
         @ApiResponse(responseCode = "404", description = "Event not found")
       })
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteEvent(
       @Parameter(description = "Event ID") @PathVariable String id,
-      @Parameter(description = "User ID of the actor attempting to delete") @RequestParam String userId) {
+      @Parameter(description = "User ID of the actor attempting to delete") @RequestParam
+          String userId) {
     logger.info("Received request to delete event with ID: " + id + " by user: " + userId);
     try {
       eventService.deleteEvent(id, userId);

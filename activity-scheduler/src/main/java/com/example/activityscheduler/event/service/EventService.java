@@ -189,27 +189,25 @@ public class EventService {
    */
   public void deleteEvent(String eventId, String userId) {
     logger.info("Deleting event with ID: " + eventId + " by user: " + userId);
-    
+
     if (userId == null || userId.trim().isEmpty()) {
       logger.severe("User ID cannot be null or empty for event deletion");
       throw new IllegalArgumentException("User ID is required to delete an event");
     }
-    
+
     Event event =
         eventRepository
             .findById(eventId)
             .orElseThrow(() -> new IllegalArgumentException("Event not found with ID: " + eventId));
-    
+
     // Check if the actor is the event creator
     if (event.getCreatedBy() == null || event.getCreatedBy().trim().isEmpty()) {
       logger.severe(
-          "Event with ID "
-              + eventId
-              + " has no creator, cannot verify deletion permission");
+          "Event with ID " + eventId + " has no creator, cannot verify deletion permission");
       throw new IllegalArgumentException(
           "Event has no creator. Deletion is not allowed for events without a creator.");
     }
-    
+
     if (!event.getCreatedBy().equals(userId)) {
       logger.severe(
           "User "
@@ -223,7 +221,7 @@ public class EventService {
               + userId
               + "' is not the creator of this event.");
     }
-    
+
     eventRepository.deleteById(eventId);
     logger.info("Successfully deleted event with ID: " + eventId + " by creator: " + userId);
   }

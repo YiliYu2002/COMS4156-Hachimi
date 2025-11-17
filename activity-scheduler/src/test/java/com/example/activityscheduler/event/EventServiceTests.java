@@ -374,7 +374,8 @@ class EventServiceTests {
 
     IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class, () -> eventService.deleteEvent("event-123", "user-789"));
+            IllegalArgumentException.class,
+            () -> eventService.deleteEvent("event-123", "user-789"));
 
     assertTrue(exception.getMessage().contains("Event has no creator"));
     verify(eventRepository).findById("event-123");
