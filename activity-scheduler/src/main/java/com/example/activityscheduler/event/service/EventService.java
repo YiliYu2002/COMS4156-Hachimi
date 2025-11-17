@@ -1,5 +1,7 @@
 package com.example.activityscheduler.event.service;
 
+import com.example.activityscheduler.attendee.model.RsvpStatus;
+import com.example.activityscheduler.attendee.service.AttendeeService;
 import com.example.activityscheduler.event.model.Event;
 import com.example.activityscheduler.event.repository.EventRepository;
 import com.example.activityscheduler.membership.service.MembershipService;
@@ -24,25 +26,29 @@ public class EventService {
   private final OrganizationService organizationService;
   private final UserRepository userRepository;
   private final MembershipService membershipService;
+  private final AttendeeService attendeeService;
 
   /**
    * Constructs an EventService with the given repository, organization service, user repository,
-   * and membership service.
+   * membership service, and attendee service.
    *
    * @param eventRepository the event repository
    * @param organizationService the organization service
    * @param userRepository the user repository
    * @param membershipService the membership service
+   * @param attendeeService the attendee service
    */
   public EventService(
       EventRepository eventRepository,
       OrganizationService organizationService,
       UserRepository userRepository,
-      MembershipService membershipService) {
+      MembershipService membershipService,
+      AttendeeService attendeeService) {
     this.eventRepository = eventRepository;
     this.organizationService = organizationService;
     this.userRepository = userRepository;
     this.membershipService = membershipService;
+    this.attendeeService = attendeeService;
   }
 
   /**
@@ -65,6 +71,32 @@ public class EventService {
       }
       Event savedEvent = eventRepository.save(event);
       logger.info("Successfully created event with ID: " + savedEvent.getId());
+
+      // Automatically add the event creator as an attendee with YES status
+      if (savedEvent.getCreatedBy() != null && !savedEvent.getCreatedBy().trim().isEmpty()) {
+        try {
+          attendeeService.createAttendee(
+              savedEvent.getId(), savedEvent.getCreatedBy(), RsvpStatus.YES);
+          logger.info(
+              "Automatically added event creator "
+                  + savedEvent.getCreatedBy()
+                  + " as attendee for event "
+                  + savedEvent.getId()
+                  + " with RSVP status YES");
+        } catch (IllegalStateException e) {
+          // Attendee already exists, which is fine - just log it
+          logger.fine(
+              "Event creator "
+                  + savedEvent.getCreatedBy()
+                  + " is already an attendee for event "
+                  + savedEvent.getId());
+        } catch (Exception e) {
+          // Log error but don't fail event creation
+          logger.warning(
+              "Failed to automatically add event creator as attendee: " + e.getMessage());
+        }
+      }
+
       return savedEvent;
     }
     throw new IllegalArgumentException("Event cannot be null");
@@ -100,7 +132,7 @@ public class EventService {
     existingEvent.setStartAt(updatedEvent.getStartAt());
     existingEvent.setEndAt(updatedEvent.getEndAt());
     existingEvent.setCapacity(updatedEvent.getCapacity());
-    existingEvent.setLocation(updatedEvent.getLocation());
+    // existingEvent.setLocation(updatedEvent.getLocation());
     existingEvent.setOrgId(updatedEvent.getOrgId());
     existingEvent.setCreatedBy(updatedEvent.getCreatedBy());
 

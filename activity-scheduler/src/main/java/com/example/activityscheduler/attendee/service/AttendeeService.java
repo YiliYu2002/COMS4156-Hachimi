@@ -4,8 +4,9 @@ import com.example.activityscheduler.attendee.model.Attendee;
 import com.example.activityscheduler.attendee.model.AttendeeId;
 import com.example.activityscheduler.attendee.model.RsvpStatus;
 import com.example.activityscheduler.attendee.repository.AttendeeRepository;
-import com.example.activityscheduler.organization.repository.OrganizationRepository;
-// import com.example.activityscheduler.event.repository.EventRepository;
+import com.example.activityscheduler.event.model.Event;
+import com.example.activityscheduler.event.repository.EventRepository;
+import com.example.activityscheduler.membership.service.MembershipService;
 import com.example.activityscheduler.user.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
@@ -23,26 +24,27 @@ public class AttendeeService {
 
   private final AttendeeRepository attendeeRepository;
   private final UserRepository userRepository;
-  private final OrganizationRepository organizationRepository;
-  // private final EventRepository eventRepository;
+  private final EventRepository eventRepository;
+  private final MembershipService membershipService;
   private static final Logger logger = Logger.getLogger(AttendeeService.class.getName());
 
   /**
-   * Constructs an AttendeeService with the given repository.
+   * Constructs an AttendeeService with the given repositories and services.
    *
    * @param attendeeRepository the attendee repository
    * @param userRepository the user repository
-   * @param organizationRepository the organization repository
+   * @param eventRepository the event repository
+   * @param membershipService the membership service
    */
   public AttendeeService(
       AttendeeRepository attendeeRepository,
       UserRepository userRepository,
-      OrganizationRepository
-          organizationRepository) { // TODO: Added EventRepository to parameter list
+      EventRepository eventRepository,
+      MembershipService membershipService) {
     this.attendeeRepository = attendeeRepository;
     this.userRepository = userRepository;
-    this.organizationRepository = organizationRepository;
-    // this.eventRepository = eventRepository
+    this.eventRepository = eventRepository;
+    this.membershipService = membershipService;
   }
 
   /**
@@ -104,11 +106,36 @@ public class AttendeeService {
       throw new IllegalArgumentException("User not found");
     }
 
-    // retrieve the org_id of the event, then check if user_id in this org at this line
-
     if (eventId == null || eventId.trim().isEmpty()) {
       logger.warning("Event ID cannot be null or empty");
       throw new IllegalArgumentException("Event ID cannot be null or empty");
+    }
+
+    // Validate event exists
+    Event event =
+        eventRepository
+            .findById(eventId)
+            .orElseThrow(
+                () -> {
+                  logger.warning("Event not found for attendee creation: " + eventId);
+                  return new IllegalArgumentException("Event not found");
+                });
+
+    // Validate user is a member of the organization that owns the event
+    if (!membershipService.existsMembership(event.getOrgId(), userId)) {
+      logger.warning(
+          "User "
+              + userId
+              + " is not a member of organization "
+              + event.getOrgId()
+              + " that owns event "
+              + eventId);
+      throw new IllegalArgumentException(
+          "User '"
+              + userId
+              + "' is not a member of organization '"
+              + event.getOrgId()
+              + "'. Only organization members can be invited to events.");
     }
 
     if (attendeeRepository.existsByEventIdAndUserId(eventId, userId)) {
@@ -212,12 +239,41 @@ public class AttendeeService {
       throw new IllegalArgumentException("Event ID cannot be null or empty");
     }
 
-    // String eventCreatorId = eventRepository.findById(eventId).get().getCreatorId();
+    if (requestUserId == null || requestUserId.trim().isEmpty()) {
+      logger.warning("Request user ID cannot be null or empty");
+      throw new IllegalArgumentException("Request user ID cannot be null or empty");
+    }
 
-    // if (!eventCreatorId.equals(requestUserId)) {
-    //   logger.warning("Only the event creator can delete an attendee");
-    //   throw new IllegalArgumentException("Request user ID does not match event creator ID");
-    // }
+    // Validate event exists and check if request user is the event creator
+    Event event =
+        eventRepository
+            .findById(eventId)
+            .orElseThrow(
+                () -> {
+                  logger.warning("Event not found for attendee deletion: " + eventId);
+                  return new IllegalArgumentException("Event not found");
+                });
+
+    if (event.getCreatedBy() == null || event.getCreatedBy().trim().isEmpty()) {
+      logger.warning(
+          "Event with ID " + eventId + " has no creator, cannot verify deletion permission");
+      throw new IllegalArgumentException(
+          "Event has no creator. Deletion is not allowed for events without a creator.");
+    }
+
+    if (!event.getCreatedBy().equals(requestUserId)) {
+      logger.warning(
+          "User "
+              + requestUserId
+              + " attempted to delete attendee for event "
+              + eventId
+              + " created by "
+              + event.getCreatedBy());
+      throw new IllegalArgumentException(
+          "Only the event creator can delete attendees. User '"
+              + requestUserId
+              + "' is not the creator of this event.");
+    }
 
     if (userId == null || userId.trim().isEmpty()) {
       logger.warning("User ID cannot be null or empty");

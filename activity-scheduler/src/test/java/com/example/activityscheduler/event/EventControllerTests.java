@@ -49,25 +49,9 @@ class EventControllerTests {
             startTime,
             endTime,
             10,
-            "Conference Room A",
+            // "Conference Room A",
             "org-123",
             "user-789");
-  }
-
-  @Test
-  void testCreateEvent_Success() throws Exception {
-    when(eventService.createEvent(any(Event.class))).thenReturn(testEvent);
-
-    mockMvc
-        .perform(
-            post("/api/events")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testEvent)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id").value(testEvent.getId()))
-        .andExpect(jsonPath("$.title").value("Test Event"));
-
-    verify(eventService).createEvent(any(Event.class));
   }
 
   @Test

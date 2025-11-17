@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.example.activityscheduler.attendee.model.Attendee;
+import com.example.activityscheduler.attendee.model.RsvpStatus;
+import com.example.activityscheduler.attendee.service.AttendeeService;
 import com.example.activityscheduler.event.model.Event;
 import com.example.activityscheduler.event.repository.EventRepository;
 import com.example.activityscheduler.event.service.EventService;
@@ -28,6 +31,7 @@ class EventServiceTests {
   @Mock private OrganizationService organizationService;
   @Mock private UserRepository userRepository;
   @Mock private MembershipService membershipService;
+  @Mock private AttendeeService attendeeService;
   private EventService eventService;
   private Event testEvent;
   private Organization testOrganization;
@@ -37,7 +41,12 @@ class EventServiceTests {
   @BeforeEach
   void setUp() {
     eventService =
-        new EventService(eventRepository, organizationService, userRepository, membershipService);
+        new EventService(
+            eventRepository,
+            organizationService,
+            userRepository,
+            membershipService,
+            attendeeService);
     startTime = LocalDateTime.of(2024, 1, 15, 10, 0);
     endTime = LocalDateTime.of(2024, 1, 15, 11, 0);
     testEvent =
@@ -47,7 +56,7 @@ class EventServiceTests {
             startTime,
             endTime,
             10,
-            "Conference Room A",
+            // "Conference Room A",
             "org-123",
             "user-789");
     testOrganization = new Organization("user-789", "Test Organization");
@@ -61,6 +70,9 @@ class EventServiceTests {
     when(userRepository.existsById("user-789")).thenReturn(true);
     when(membershipService.existsMembership("org-123", "user-789")).thenReturn(true);
     when(eventRepository.save(any(Event.class))).thenReturn(testEvent);
+    Attendee mockAttendee = new Attendee(testEvent.getId(), "user-789", RsvpStatus.YES);
+    when(attendeeService.createAttendee(anyString(), eq("user-789"), eq(RsvpStatus.YES)))
+        .thenReturn(mockAttendee);
 
     Event result = eventService.createEvent(testEvent);
 
@@ -70,6 +82,7 @@ class EventServiceTests {
     verify(userRepository).existsById("user-789");
     verify(membershipService).existsMembership("org-123", "user-789");
     verify(eventRepository).save(testEvent);
+    verify(attendeeService).createAttendee(anyString(), eq("user-789"), eq(RsvpStatus.YES));
   }
 
   @Test
@@ -340,29 +353,23 @@ class EventServiceTests {
 
   @Test
   void testDeleteEvent_NullUserId() {
-    testEvent.setId("event-123");
-    testEvent.setCreatedBy("user-789");
-    when(eventRepository.findById("event-123")).thenReturn(Optional.of(testEvent));
-
     IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class, () -> eventService.deleteEvent("event-123", null));
 
     assertTrue(exception.getMessage().contains("User ID is required"));
+    verify(eventRepository, never()).findById(anyString());
     verify(eventRepository, never()).deleteById(anyString());
   }
 
   @Test
   void testDeleteEvent_EmptyUserId() {
-    testEvent.setId("event-123");
-    testEvent.setCreatedBy("user-789");
-    when(eventRepository.findById("event-123")).thenReturn(Optional.of(testEvent));
-
     IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class, () -> eventService.deleteEvent("event-123", ""));
 
     assertTrue(exception.getMessage().contains("User ID is required"));
+    verify(eventRepository, never()).findById(anyString());
     verify(eventRepository, never()).deleteById(anyString());
   }
 
