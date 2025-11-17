@@ -29,7 +29,6 @@ public class AttendeeId implements Serializable {
     return eventId;
   }
 
-
   public String getUserId() {
     return userId;
   }

@@ -187,9 +187,10 @@ public class AttendeeController {
   public Attendee updateRsvpStatus(
       @Parameter(description = "Event ID") @PathVariable String eventId,
       @Parameter(description = "User ID") @PathVariable String userId,
-      @Parameter(description = "User ID of the request sender") @RequestHeader("X-User-Id") String requestUserId,
+      @Parameter(description = "User ID of the request sender") @RequestHeader("X-User-Id")
+          String requestUserId,
       @RequestBody RsvpUpdateRequest rsvpUpdate) {
-        
+
     if (rsvpUpdate == null || rsvpUpdate.getRsvpStatus() == null) {
       logger.warning("Invalid RSVP update request: RSVP status is null");
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid RSVP status data");
@@ -197,7 +198,8 @@ public class AttendeeController {
 
     if (requestUserId == null || requestUserId.trim().isEmpty()) {
       logger.warning("Request user ID header (X-User-Id) is missing or empty");
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request user ID header is required");
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Request user ID header is required");
     }
 
     logger.info(
@@ -224,7 +226,8 @@ public class AttendeeController {
 
     try {
       Attendee updatedAttendee =
-          attendeeService.updateRsvpStatus(eventId, userId, requestUserId, rsvpUpdate.getRsvpStatus());
+          attendeeService.updateRsvpStatus(
+              eventId, userId, requestUserId, rsvpUpdate.getRsvpStatus());
       logger.info(
           "Successfully updated RSVP status for event: " + eventId + " and user: " + userId);
       return updatedAttendee;
@@ -255,11 +258,13 @@ public class AttendeeController {
   public void deleteAttendee(
       @Parameter(description = "Event ID") @PathVariable String eventId,
       @Parameter(description = "User ID") @PathVariable String userId,
-      @Parameter(description = "Request user ID") @RequestHeader("X-User-Id") String requestUserId) {
+      @Parameter(description = "Request user ID") @RequestHeader("X-User-Id")
+          String requestUserId) {
 
     if (requestUserId == null || requestUserId.trim().isEmpty()) {
       logger.warning("Request user ID header (X-User-Id) is missing or empty");
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request user ID header is required");
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Request user ID header is required");
     }
 
     logger.info("Deleting attendee for event: " + eventId + " and user: " + userId);

@@ -4,9 +4,9 @@ import com.example.activityscheduler.attendee.model.Attendee;
 import com.example.activityscheduler.attendee.model.AttendeeId;
 import com.example.activityscheduler.attendee.model.RsvpStatus;
 import com.example.activityscheduler.attendee.repository.AttendeeRepository;
-import com.example.activityscheduler.user.repository.UserRepository;
 import com.example.activityscheduler.organization.repository.OrganizationRepository;
 // import com.example.activityscheduler.event.repository.EventRepository;
+import com.example.activityscheduler.user.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -34,7 +34,11 @@ public class AttendeeService {
    * @param userRepository the user repository
    * @param organizationRepository the organization repository
    */
-  public AttendeeService(AttendeeRepository attendeeRepository, UserRepository userRepository, OrganizationRepository organizationRepository) { //TODO: Added EventRepository to parameter list
+  public AttendeeService(
+      AttendeeRepository attendeeRepository,
+      UserRepository userRepository,
+      OrganizationRepository
+          organizationRepository) { // TODO: Added EventRepository to parameter list
     this.attendeeRepository = attendeeRepository;
     this.userRepository = userRepository;
     this.organizationRepository = organizationRepository;
@@ -148,7 +152,8 @@ public class AttendeeService {
    * @throws IllegalArgumentException if event ID, user ID, or RSVP status is null
    * @throws IllegalStateException if attendee is not found
    */
-  public Attendee updateRsvpStatus(String eventId, String userId, String requestUserId, RsvpStatus newRsvpStatus) {
+  public Attendee updateRsvpStatus(
+      String eventId, String userId, String requestUserId, RsvpStatus newRsvpStatus) {
     if (eventId == null || eventId.trim().isEmpty()) {
       logger.warning("Event ID cannot be null or empty");
       throw new IllegalArgumentException("Event ID cannot be null or empty");
@@ -274,6 +279,4 @@ public class AttendeeService {
         "Attendee count for event " + eventId + " with RSVP status " + rsvpStatus + ": " + count);
     return count;
   }
-
-
 }
