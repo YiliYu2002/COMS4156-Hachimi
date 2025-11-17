@@ -296,21 +296,89 @@ class EventServiceTests {
 
   @Test
   void testDeleteEvent_Success() {
-    when(eventRepository.existsById("event-123")).thenReturn(true);
+    testEvent.setId("event-123");
+    testEvent.setCreatedBy("user-789");
+    when(eventRepository.findById("event-123")).thenReturn(Optional.of(testEvent));
 
-    eventService.deleteEvent("event-123");
+    eventService.deleteEvent("event-123", "user-789");
 
+    verify(eventRepository).findById("event-123");
     verify(eventRepository).deleteById("event-123");
   }
 
   @Test
   void testDeleteEvent_NotFound() {
-    when(eventRepository.existsById("nonexistent")).thenReturn(false);
+    when(eventRepository.findById("nonexistent")).thenReturn(Optional.empty());
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> eventService.deleteEvent("nonexistent"));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> eventService.deleteEvent("nonexistent", "user-789"));
 
     assertTrue(exception.getMessage().contains("Event not found"));
+    verify(eventRepository).findById("nonexistent");
+    verify(eventRepository, never()).deleteById(anyString());
+  }
+
+  @Test
+  void testDeleteEvent_NotCreator() {
+    testEvent.setId("event-123");
+    testEvent.setCreatedBy("user-789");
+    when(eventRepository.findById("event-123")).thenReturn(Optional.of(testEvent));
+
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> eventService.deleteEvent("event-123", "different-user"));
+
+    assertTrue(
+        exception.getMessage().contains("Only the event creator can delete the event")
+            || exception.getMessage().contains("is not the creator"));
+    verify(eventRepository).findById("event-123");
+    verify(eventRepository, never()).deleteById(anyString());
+  }
+
+  @Test
+  void testDeleteEvent_NullUserId() {
+    testEvent.setId("event-123");
+    testEvent.setCreatedBy("user-789");
+    when(eventRepository.findById("event-123")).thenReturn(Optional.of(testEvent));
+
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class, () -> eventService.deleteEvent("event-123", null));
+
+    assertTrue(exception.getMessage().contains("User ID is required"));
+    verify(eventRepository, never()).deleteById(anyString());
+  }
+
+  @Test
+  void testDeleteEvent_EmptyUserId() {
+    testEvent.setId("event-123");
+    testEvent.setCreatedBy("user-789");
+    when(eventRepository.findById("event-123")).thenReturn(Optional.of(testEvent));
+
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class, () -> eventService.deleteEvent("event-123", ""));
+
+    assertTrue(exception.getMessage().contains("User ID is required"));
+    verify(eventRepository, never()).deleteById(anyString());
+  }
+
+  @Test
+  void testDeleteEvent_NoCreator() {
+    testEvent.setId("event-123");
+    testEvent.setCreatedBy(null);
+    when(eventRepository.findById("event-123")).thenReturn(Optional.of(testEvent));
+
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class, () -> eventService.deleteEvent("event-123", "user-789"));
+
+    assertTrue(exception.getMessage().contains("Event has no creator"));
+    verify(eventRepository).findById("event-123");
+    verify(eventRepository, never()).deleteById(anyString());
   }
 
   @Test

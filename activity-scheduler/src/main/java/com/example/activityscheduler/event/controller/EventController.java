@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -131,28 +132,38 @@ public class EventController {
   }
 
   /**
-   * Deletes an event by its ID.
+   * Deletes an event by its ID. Only the event creator can delete the event.
    *
    * @param id the event ID
+   * @param userId the user ID of the actor attempting to delete the event
    * @return no content if successful
    */
-  @Operation(summary = "Delete an event", description = "Deletes an event from the system")
+  @Operation(
+      summary = "Delete an event",
+      description = "Deletes an event from the system. Only the event creator can delete the event.")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "204", description = "Event deleted successfully"),
+        @ApiResponse(responseCode = "403", description = "Forbidden: Only the event creator can delete the event"),
         @ApiResponse(responseCode = "404", description = "Event not found")
       })
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteEvent(
-      @Parameter(description = "Event ID") @PathVariable String id) {
-    logger.info("Received request to delete event with ID: " + id);
+      @Parameter(description = "Event ID") @PathVariable String id,
+      @Parameter(description = "User ID of the actor attempting to delete") @RequestParam String userId) {
+    logger.info("Received request to delete event with ID: " + id + " by user: " + userId);
     try {
-      eventService.deleteEvent(id);
-      logger.info("Successfully deleted event with ID: " + id);
+      eventService.deleteEvent(id, userId);
+      logger.info("Successfully deleted event with ID: " + id + " by user: " + userId);
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
       logger.severe("Failed to delete event with ID " + id + ": " + e.getMessage());
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+      if (e.getMessage().contains("not found")) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+      } else if (e.getMessage().contains("creator") || e.getMessage().contains("permission")) {
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+      }
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
     }
   }
 

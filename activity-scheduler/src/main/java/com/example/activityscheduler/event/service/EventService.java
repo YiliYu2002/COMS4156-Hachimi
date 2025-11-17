@@ -181,19 +181,51 @@ public class EventService {
   }
 
   /**
-   * Deletes an event by its ID.
+   * Deletes an event by its ID. Only the event creator can delete the event.
    *
    * @param eventId the event ID to delete
-   * @throws IllegalArgumentException if the event is not found
+   * @param userId the user ID of the actor attempting to delete the event
+   * @throws IllegalArgumentException if the event is not found or the user is not the event creator
    */
-  public void deleteEvent(String eventId) {
-    logger.info("Deleting event with ID: " + eventId);
-    if (!eventRepository.existsById(eventId)) {
-      logger.warning("Attempted to delete non-existent event with ID: " + eventId);
-      throw new IllegalArgumentException("Event not found with ID: " + eventId);
+  public void deleteEvent(String eventId, String userId) {
+    logger.info("Deleting event with ID: " + eventId + " by user: " + userId);
+    
+    if (userId == null || userId.trim().isEmpty()) {
+      logger.severe("User ID cannot be null or empty for event deletion");
+      throw new IllegalArgumentException("User ID is required to delete an event");
     }
+    
+    Event event =
+        eventRepository
+            .findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Event not found with ID: " + eventId));
+    
+    // Check if the actor is the event creator
+    if (event.getCreatedBy() == null || event.getCreatedBy().trim().isEmpty()) {
+      logger.severe(
+          "Event with ID "
+              + eventId
+              + " has no creator, cannot verify deletion permission");
+      throw new IllegalArgumentException(
+          "Event has no creator. Deletion is not allowed for events without a creator.");
+    }
+    
+    if (!event.getCreatedBy().equals(userId)) {
+      logger.severe(
+          "User "
+              + userId
+              + " attempted to delete event "
+              + eventId
+              + " created by "
+              + event.getCreatedBy());
+      throw new IllegalArgumentException(
+          "Only the event creator can delete the event. User '"
+              + userId
+              + "' is not the creator of this event.");
+    }
+    
     eventRepository.deleteById(eventId);
-    logger.info("Successfully deleted event with ID: " + eventId);
+    logger.info("Successfully deleted event with ID: " + eventId + " by creator: " + userId);
   }
 
   /**

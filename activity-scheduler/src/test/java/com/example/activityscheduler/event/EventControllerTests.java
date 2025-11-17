@@ -143,22 +143,41 @@ class EventControllerTests {
 
   @Test
   void testDeleteEvent_Success() throws Exception {
-    doNothing().when(eventService).deleteEvent("event-123");
+    doNothing().when(eventService).deleteEvent("event-123", "user-789");
 
-    mockMvc.perform(delete("/api/events/event-123")).andExpect(status().isNoContent());
+    mockMvc
+        .perform(delete("/api/events/event-123").param("userId", "user-789"))
+        .andExpect(status().isNoContent());
 
-    verify(eventService).deleteEvent("event-123");
+    verify(eventService).deleteEvent("event-123", "user-789");
   }
 
   @Test
   void testDeleteEvent_NotFound() throws Exception {
     doThrow(new IllegalArgumentException("Event not found with ID: nonexistent"))
         .when(eventService)
-        .deleteEvent("nonexistent");
+        .deleteEvent("nonexistent", "user-789");
 
-    mockMvc.perform(delete("/api/events/nonexistent")).andExpect(status().isNotFound());
+    mockMvc
+        .perform(delete("/api/events/nonexistent").param("userId", "user-789"))
+        .andExpect(status().isNotFound());
 
-    verify(eventService).deleteEvent("nonexistent");
+    verify(eventService).deleteEvent("nonexistent", "user-789");
+  }
+
+  @Test
+  void testDeleteEvent_Forbidden_NotCreator() throws Exception {
+    doThrow(
+            new IllegalArgumentException(
+                "Only the event creator can delete the event. User 'user-999' is not the creator of this event."))
+        .when(eventService)
+        .deleteEvent("event-123", "user-999");
+
+    mockMvc
+        .perform(delete("/api/events/event-123").param("userId", "user-999"))
+        .andExpect(status().isForbidden());
+
+    verify(eventService).deleteEvent("event-123", "user-999");
   }
 
   @Test
