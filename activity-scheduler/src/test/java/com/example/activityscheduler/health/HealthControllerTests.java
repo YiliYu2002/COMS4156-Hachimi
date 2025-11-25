@@ -7,20 +7,21 @@ import java.sql.Connection;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /** Unit tests for HealthController. */
-@WebMvcTest(HealthController.class)
+@ExtendWith(MockitoExtension.class)
 class HealthControllerTests {
 
   private MockMvc mockMvc;
 
-  @MockBean private DataSource dataSource;
+  @Mock private DataSource dataSource;
 
-  @MockBean private Connection connection;
+  @Mock private Connection connection;
 
   @BeforeEach
   void setUp() {

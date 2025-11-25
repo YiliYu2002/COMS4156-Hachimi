@@ -1,4 +1,12 @@
 com.example.activityscheduler
+com.example.activityscheduler.attendee.controller
+com.example.activityscheduler.attendee.model
+com.example.activityscheduler.attendee.repository
+com.example.activityscheduler.attendee.service
+com.example.activityscheduler.event.controller
+com.example.activityscheduler.event.model
+com.example.activityscheduler.event.repository
+com.example.activityscheduler.event.service
 com.example.activityscheduler.health
 com.example.activityscheduler.membership.controller
 com.example.activityscheduler.membership.model
@@ -13,3 +21,4 @@ com.example.activityscheduler.user.controller
 com.example.activityscheduler.user.dto
 com.example.activityscheduler.user.model
 com.example.activityscheduler.user.repository
+com.example.activityscheduler.user.utils
