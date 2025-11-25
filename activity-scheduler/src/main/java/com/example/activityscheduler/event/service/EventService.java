@@ -132,7 +132,6 @@ public class EventService {
     existingEvent.setStartAt(updatedEvent.getStartAt());
     existingEvent.setEndAt(updatedEvent.getEndAt());
     existingEvent.setCapacity(updatedEvent.getCapacity());
-    // existingEvent.setLocation(updatedEvent.getLocation());
     existingEvent.setOrgId(updatedEvent.getOrgId());
     existingEvent.setCreatedBy(updatedEvent.getCreatedBy());
 

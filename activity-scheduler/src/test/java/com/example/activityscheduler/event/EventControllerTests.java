@@ -130,7 +130,7 @@ class EventControllerTests {
     doNothing().when(eventService).deleteEvent("event-123", "user-789");
 
     mockMvc
-        .perform(delete("/api/events/event-123").param("userId", "user-789"))
+        .perform(delete("/api/events/event-123").header("X-User-Id", "user-789"))
         .andExpect(status().isNoContent());
 
     verify(eventService).deleteEvent("event-123", "user-789");
@@ -143,7 +143,7 @@ class EventControllerTests {
         .deleteEvent("nonexistent", "user-789");
 
     mockMvc
-        .perform(delete("/api/events/nonexistent").param("userId", "user-789"))
+        .perform(delete("/api/events/nonexistent").header("X-User-Id", "user-789"))
         .andExpect(status().isNotFound());
 
     verify(eventService).deleteEvent("nonexistent", "user-789");
@@ -158,10 +158,26 @@ class EventControllerTests {
         .deleteEvent("event-123", "user-999");
 
     mockMvc
-        .perform(delete("/api/events/event-123").param("userId", "user-999"))
+        .perform(delete("/api/events/event-123").header("X-User-Id", "user-999"))
         .andExpect(status().isForbidden());
 
     verify(eventService).deleteEvent("event-123", "user-999");
+  }
+
+  @Test
+  void testDeleteEvent_MissingHeader_ReturnsBadRequest() throws Exception {
+    mockMvc.perform(delete("/api/events/event-123")).andExpect(status().isBadRequest());
+
+    verify(eventService, never()).deleteEvent(anyString(), anyString());
+  }
+
+  @Test
+  void testDeleteEvent_EmptyHeader_ReturnsBadRequest() throws Exception {
+    mockMvc
+        .perform(delete("/api/events/event-123").header("X-User-Id", ""))
+        .andExpect(status().isBadRequest());
+
+    verify(eventService, never()).deleteEvent(anyString(), anyString());
   }
 
   @Test

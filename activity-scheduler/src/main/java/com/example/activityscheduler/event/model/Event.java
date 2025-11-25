@@ -41,9 +41,6 @@ public class Event {
   @Column
   private Integer capacity;
 
-  // @Column(name = "location", length = 255)
-  // private String location;
-
   @NotNull
   @Column(name = "org_id", nullable = false, length = 36)
   private String orgId;
@@ -77,7 +74,6 @@ public class Event {
       LocalDateTime startAt,
       LocalDateTime endAt,
       Integer capacity,
-      // String location,
       String orgId,
       String createdBy) {
     this();
@@ -86,7 +82,6 @@ public class Event {
     this.startAt = startAt;
     this.endAt = endAt;
     this.capacity = capacity;
-    // this.location = location;
     this.orgId = orgId;
     this.createdBy = createdBy;
   }
@@ -140,14 +135,6 @@ public class Event {
     this.capacity = capacity;
   }
 
-  // public String getLocation() {
-  //   return location;
-  // }
-
-  // public void setLocation(String location) {
-  //   this.location = location;
-  // }
-
   public String getOrgId() {
     return orgId;
   }
@@ -199,9 +186,6 @@ public class Event {
         + endAt
         + ", capacity="
         + capacity
-        // + ", location='"
-        // + location
-        // + '\''
         + ", orgId='"
         + orgId
         + '\''

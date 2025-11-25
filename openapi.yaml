@@ -1,0 +1,1337 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: Event Management
+  description: APIs for managing events and scheduling
+- name: User Management
+  description: APIs for managing users
+- name: Event Attendee Management
+  description: APIs for managing event invitations and RSVP status
+- name: Membership Management
+  description: APIs for managing organization memberships
+- name: Organization Management
+  description: APIs for managing organizations
+paths:
+  /api/users/{id}/username:
+    put:
+      tags:
+      - User Management
+      summary: Update user username
+      description: Updates an existing user's username
+      operationId: updateUsername
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
+      responses:
+        "200":
+          description: User updated successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid user data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/User"
+  /api/organizations/{id}:
+    get:
+      tags:
+      - Organization Management
+      summary: Get organization by ID
+      description: Retrieves a specific organization by its unique identifier
+      operationId: getOrganizationById
+      parameters:
+      - name: id
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Organization found successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "404":
+          description: Organization not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+    put:
+      tags:
+      - Organization Management
+      summary: Update organization
+      description: Updates an existing organization with new data
+      operationId: updateOrganization
+      parameters:
+      - name: id
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Organization"
+        required: true
+      responses:
+        "404":
+          description: Organization not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "400":
+          description: Invalid organization data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "200":
+          description: Organization updated successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "409":
+          description: Organization with this name already exists
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+    delete:
+      tags:
+      - Organization Management
+      summary: Delete organization
+      description: Deletes an organization by its ID
+      operationId: deleteOrganization
+      parameters:
+      - name: id
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Organization deleted successfully
+        "404":
+          description: Organization not found
+  /api/memberships/{orgId}/{userId}/status:
+    put:
+      tags:
+      - Membership Management
+      summary: Update membership status
+      description: Updates the status of an existing membership
+      operationId: updateMembershipStatus
+      parameters:
+      - name: orgId
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusUpdateRequest"
+        required: true
+      responses:
+        "404":
+          description: Membership not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "200":
+          description: Membership status updated successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "400":
+          description: Invalid status data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /api/events/{id}:
+    get:
+      tags:
+      - Event Management
+      summary: Get event by ID
+      description: Retrieves a specific event by its unique identifier
+      operationId: getEventById
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Event found successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          description: Event not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Event"
+    put:
+      tags:
+      - Event Management
+      summary: Update an event
+      description: Updates an existing event with new data
+      operationId: updateEvent
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Event"
+        required: true
+      responses:
+        "400":
+          description: Invalid event data or time conflicts
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Event"
+        "200":
+          description: Event updated successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          description: Event not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Event"
+    delete:
+      tags:
+      - Event Management
+      summary: Delete an event
+      description: Deletes an event from the system. Only the event creator can delete
+        the event.
+      operationId: deleteEvent
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+      - name: X-User-Id
+        in: header
+        description: User ID of the actor attempting to delete
+        required: true
+        schema:
+          type: string
+      responses:
+        "403":
+          description: "Forbidden: Only the event creator can delete the event"
+        "400":
+          description: "Bad request: Missing or invalid user ID header"
+        "204":
+          description: Event deleted successfully
+        "404":
+          description: Event not found
+  /api/attendees/{eventId}/{userId}/rsvp:
+    put:
+      tags:
+      - Event Attendee Management
+      summary: Update RSVP status
+      description: Updates the RSVP status of an existing event invitation
+      operationId: updateRsvpStatus
+      parameters:
+      - name: eventId
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      - name: X-User-Id
+        in: header
+        description: User ID of the request sender
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RsvpUpdateRequest"
+        required: true
+      responses:
+        "400":
+          description: Invalid RSVP status data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Attendee"
+        "404":
+          description: Attendee not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Attendee"
+        "200":
+          description: RSVP status updated successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Attendee"
+  /api/users/register:
+    post:
+      tags:
+      - User Management
+      summary: Create a new user by email
+      description: Creates a new user in the system by providing an email address
+        and display name
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegistrationRequest"
+        required: true
+      responses:
+        "409":
+          description: User already exists
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/User"
+        "200":
+          description: User created successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid user data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/User"
+  /api/organizations/create:
+    post:
+      tags:
+      - Organization Management
+      summary: Create a new organization
+      description: Creates a new organization in the system by providing name and
+        creator
+      operationId: createOrganization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrganizationCreationRequest"
+        required: true
+      responses:
+        "400":
+          description: Invalid organization data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "201":
+          description: Organization created successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "409":
+          description: Organization with this name already exists
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+  /api/memberships:
+    get:
+      tags:
+      - Membership Management
+      summary: Get all memberships
+      description: Retrieves a list of all memberships in the system
+      operationId: getAllMemberships
+      responses:
+        "200":
+          description: Successfully retrieved all memberships
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Membership"
+    post:
+      tags:
+      - Membership Management
+      summary: Create a new membership
+      description: Creates a new membership between an organization and a user
+      operationId: createMembership
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipRequest"
+        required: true
+      responses:
+        "400":
+          description: Invalid membership data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "409":
+          description: Membership already exists
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "200":
+          description: Membership created successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /api/events:
+    post:
+      tags:
+      - Event Management
+      summary: Create a new event
+      description: Creates a new event in the system
+      operationId: createEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Event"
+        required: true
+      responses:
+        "409":
+          description: Time conflict detected
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          description: Invalid event data or time conflicts
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Event"
+        "201":
+          description: Event created successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Event"
+  /api/attendees:
+    post:
+      tags:
+      - Event Attendee Management
+      summary: Create a new event invitation
+      description: Creates a new event invitation for a user
+      operationId: createAttendee
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendeeRequest"
+        required: true
+      responses:
+        "200":
+          description: Event invitation created successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Attendee"
+        "400":
+          description: Invalid invitation data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Attendee"
+        "404":
+          description: User not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Attendee"
+        "409":
+          description: Invitation already exists
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Attendee"
+  /health/db:
+    get:
+      tags:
+      - health-controller
+      operationId: dbHealth
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /health/basic:
+    get:
+      tags:
+      - health-controller
+      operationId: basicHealth
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /api/users:
+    get:
+      tags:
+      - User Management
+      summary: Get all users
+      description: Retrieves a list of all users in the system
+      operationId: getAll
+      responses:
+        "200":
+          description: Successfully retrieved all users
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+  /api/users/{id}:
+    get:
+      tags:
+      - User Management
+      summary: Get user by ID
+      description: Retrieves a specific user by their unique identifier
+      operationId: getById
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: User found successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/User"
+  /api/users/exists:
+    get:
+      tags:
+      - User Management
+      summary: Check if user exists by email
+      description: Checks whether a user with the given email address exists
+      operationId: existsByEmail
+      parameters:
+      - name: email
+        in: query
+        description: Email address to check
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Email check completed successfully
+          content:
+            '*/*':
+              schema:
+                type: boolean
+  /api/organizations:
+    get:
+      tags:
+      - Organization Management
+      summary: Get all organizations
+      description: Retrieves a list of all organizations in the system
+      operationId: getAllOrganizations
+      responses:
+        "200":
+          description: Successfully retrieved all organizations
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Organization"
+  /api/organizations/exists:
+    get:
+      tags:
+      - Organization Management
+      summary: Check if organization exists by name
+      description: Checks whether an organization with the given name exists
+      operationId: existsByName
+      parameters:
+      - name: name
+        in: query
+        description: Organization name to check
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Name check completed successfully
+          content:
+            '*/*':
+              schema:
+                type: boolean
+  /api/organizations/count:
+    get:
+      tags:
+      - Organization Management
+      summary: Get organization count
+      description: Retrieves the total number of organizations in the system
+      operationId: getOrganizationCount
+      responses:
+        "200":
+          description: Count retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: integer
+                format: int64
+  /api/organizations/by-name:
+    get:
+      tags:
+      - Organization Management
+      summary: Get organization by name
+      description: Retrieves a specific organization by its name
+      operationId: getOrganizationByName
+      parameters:
+      - name: name
+        in: query
+        description: Organization name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Organization found successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "404":
+          description: Organization not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Organization"
+  /api/memberships/{orgId}/{userId}:
+    get:
+      tags:
+      - Membership Management
+      summary: Get membership by organization and user
+      description: Retrieves a specific membership by organization ID and user ID
+      operationId: getMembership
+      parameters:
+      - name: orgId
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Membership not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "200":
+          description: Membership found successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Membership"
+    delete:
+      tags:
+      - Membership Management
+      summary: Delete membership
+      description: Deletes a membership between an organization and a user
+      operationId: deleteMembership
+      parameters:
+      - name: orgId
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Membership not found
+        "200":
+          description: Membership deleted successfully
+  /api/memberships/{orgId}/{userId}/exists:
+    get:
+      tags:
+      - Membership Management
+      summary: Check membership existence
+      description: Checks if a membership exists for the given organization and user
+      operationId: existsMembership
+      parameters:
+      - name: orgId
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Membership existence checked successfully
+          content:
+            '*/*':
+              schema:
+                type: boolean
+  /api/memberships/user/{userId}:
+    get:
+      tags:
+      - Membership Management
+      summary: Get memberships by user
+      description: Retrieves all memberships for a specific user
+      operationId: getMembershipsByUser
+      parameters:
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully retrieved user memberships
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Membership"
+  /api/memberships/user/{userId}/count:
+    get:
+      tags:
+      - Membership Management
+      summary: Count user memberships
+      description: Counts the number of memberships for a user
+      operationId: countUserMemberships
+      parameters:
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: User membership count retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: integer
+                format: int64
+  /api/memberships/status/{status}:
+    get:
+      tags:
+      - Membership Management
+      summary: Get memberships by status
+      description: Retrieves all memberships with a specific status
+      operationId: getMembershipsByStatus
+      parameters:
+      - name: status
+        in: path
+        description: Membership status
+        required: true
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - INVITED
+          - SUSPENDED
+      responses:
+        "200":
+          description: Successfully retrieved memberships by status
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Membership"
+  /api/memberships/organization/{orgId}:
+    get:
+      tags:
+      - Membership Management
+      summary: Get memberships by organization
+      description: Retrieves all memberships for a specific organization
+      operationId: getMembershipsByOrganization
+      parameters:
+      - name: orgId
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully retrieved organization memberships
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Membership"
+  /api/memberships/organization/{orgId}/active-count:
+    get:
+      tags:
+      - Membership Management
+      summary: Count active members
+      description: Counts the number of active members for an organization
+      operationId: countActiveMembers
+      parameters:
+      - name: orgId
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Active member count retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: integer
+                format: int64
+  /api/events/user/{userId}:
+    get:
+      tags:
+      - Event Management
+      summary: Get events by user
+      description: Retrieves all events created by a specific user
+      operationId: getEventsByUser
+      parameters:
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Events retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+  /api/events/organization/{organizationId}:
+    get:
+      tags:
+      - Event Management
+      summary: Get events by organization
+      description: Retrieves all events belonging to a specific organization
+      operationId: getEventsByOrganization
+      parameters:
+      - name: organizationId
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Events retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+        "400":
+          description: Invalid organization ID
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+  /api/events/organization/{organizationId}/user/{userId}:
+    get:
+      tags:
+      - Event Management
+      summary: Get events by organization and user
+      description: Retrieves all events belonging to a specific organization and created
+        by a specific user
+      operationId: getEventsByOrganizationAndUser
+      parameters:
+      - name: organizationId
+        in: path
+        description: Organization ID
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Events retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+        "400":
+          description: Invalid organization ID
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+  /api/attendees/{eventId}/{userId}:
+    get:
+      tags:
+      - Event Attendee Management
+      summary: Get attendee by event and user
+      description: Retrieves a specific attendee by event ID and user ID
+      operationId: getAttendee
+      parameters:
+      - name: eventId
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Attendee found successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Attendee"
+        "404":
+          description: Attendee not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Attendee"
+    delete:
+      tags:
+      - Event Attendee Management
+      summary: Delete event invitation
+      description: Deletes an event invitation for a user
+      operationId: deleteAttendee
+      parameters:
+      - name: eventId
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      - name: X-User-Id
+        in: header
+        description: Request user ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Attendee not found
+        "200":
+          description: Event invitation deleted successfully
+  /api/attendees/{eventId}/{userId}/exists:
+    get:
+      tags:
+      - Event Attendee Management
+      summary: Check attendee existence
+      description: Checks if an event invitation exists for the given event and user
+      operationId: existsAttendee
+      parameters:
+      - name: eventId
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Attendee existence checked successfully
+          content:
+            '*/*':
+              schema:
+                type: boolean
+  /api/attendees/event/{eventId}:
+    get:
+      tags:
+      - Event Attendee Management
+      summary: Get attendees by event
+      description: Retrieves all attendees for a specific event
+      operationId: getAttendeesByEvent
+      parameters:
+      - name: eventId
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully retrieved event attendees
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Attendee"
+  /api/attendees/event/{eventId}/status/{rsvpStatus}/count:
+    get:
+      tags:
+      - Event Attendee Management
+      summary: Count event attendees by RSVP status
+      description: Counts the number of attendees for an event with a specific RSVP
+        status
+      operationId: countAttendeesByEventAndStatus
+      parameters:
+      - name: eventId
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+      - name: rsvpStatus
+        in: path
+        description: RSVP status
+        required: true
+        schema:
+          type: string
+          enum:
+          - pending
+          - "yes"
+          - "no"
+      responses:
+        "200":
+          description: Attendee count by RSVP status retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: integer
+                format: int64
+  /api/attendees/event/{eventId}/count:
+    get:
+      tags:
+      - Event Attendee Management
+      summary: Count event attendees
+      description: Counts the number of attendees for an event
+      operationId: countAttendeesByEvent
+      parameters:
+      - name: eventId
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Attendee count retrieved successfully
+          content:
+            '*/*':
+              schema:
+                type: integer
+                format: int64
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+    StatusUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - INVITED
+          - SUSPENDED
+    Membership:
+      type: object
+      properties:
+        orgId:
+          type: string
+        userId:
+          type: string
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - INVITED
+          - SUSPENDED
+        createdAt:
+          type: string
+          format: date-time
+    Event:
+      required:
+      - createdAt
+      - endAt
+      - orgId
+      - startAt
+      - title
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        capacity:
+          minimum: 0
+          type: integer
+          format: int32
+        orgId:
+          type: string
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        validTimeRange:
+          type: boolean
+    RsvpUpdateRequest:
+      type: object
+      properties:
+        rsvpStatus:
+          type: string
+          description: RSVP status
+          example: "yes"
+          enum:
+          - pending
+          - "yes"
+          - "no"
+          - pending
+          - "yes"
+          - "no"
+    Attendee:
+      type: object
+      properties:
+        eventId:
+          type: string
+        userId:
+          type: string
+        rsvpStatus:
+          type: string
+          enum:
+          - pending
+          - "yes"
+          - "no"
+    UserRegistrationRequest:
+      required:
+      - displayName
+      - email
+      type: object
+      properties:
+        email:
+          type: string
+          description: User's email address
+          example: user@example.com
+        displayName:
+          type: string
+          description: User's display name
+          example: John Doe
+      description: User registration request
+    OrganizationCreationRequest:
+      required:
+      - createdBy
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Organization name
+          example: Acme Corp
+        createdBy:
+          type: string
+          description: User ID of the organization creator
+          example: user-123
+      description: Organization creation request
+    MembershipRequest:
+      required:
+      - orgId
+      - userId
+      type: object
+      properties:
+        orgId:
+          type: string
+          description: Organization ID
+        userId:
+          type: string
+          description: User ID
+        status:
+          type: string
+          description: Membership status
+          example: INVITED
+          enum:
+          - ACTIVE
+          - INVITED
+          - SUSPENDED
+          default: INVITED
+    AttendeeRequest:
+      required:
+      - eventId
+      - userId
+      type: object
+      properties:
+        eventId:
+          type: string
+          description: Event ID
+        userId:
+          type: string
+          description: User ID
+        rsvpStatus:
+          type: string
+          description: RSVP status
+          example: pending
+          enum:
+          - pending
+          - "yes"
+          - "no"
+          - pending
+          - "yes"
+          - "no"
+          default: pending

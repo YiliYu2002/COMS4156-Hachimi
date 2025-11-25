@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -135,7 +135,7 @@ public class EventController {
    * Deletes an event by its ID. Only the event creator can delete the event.
    *
    * @param id the event ID
-   * @param userId the user ID of the actor attempting to delete the event
+   * @param requestUserId the user ID of the actor attempting to delete (from X-User-Id header)
    * @return no content if successful
    */
   @Operation(
@@ -146,6 +146,9 @@ public class EventController {
       value = {
         @ApiResponse(responseCode = "204", description = "Event deleted successfully"),
         @ApiResponse(
+            responseCode = "400",
+            description = "Bad request: Missing or invalid user ID header"),
+        @ApiResponse(
             responseCode = "403",
             description = "Forbidden: Only the event creator can delete the event"),
         @ApiResponse(responseCode = "404", description = "Event not found")
@@ -153,12 +156,19 @@ public class EventController {
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteEvent(
       @Parameter(description = "Event ID") @PathVariable String id,
-      @Parameter(description = "User ID of the actor attempting to delete") @RequestParam
-          String userId) {
-    logger.info("Received request to delete event with ID: " + id + " by user: " + userId);
+      @Parameter(description = "User ID of the actor attempting to delete")
+          @RequestHeader("X-User-Id")
+          String requestUserId) {
+    if (requestUserId == null || requestUserId.trim().isEmpty()) {
+      logger.warning("Request user ID header (X-User-Id) is missing or empty");
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Request user ID header is required");
+    }
+
+    logger.info("Received request to delete event with ID: " + id + " by user: " + requestUserId);
     try {
-      eventService.deleteEvent(id, userId);
-      logger.info("Successfully deleted event with ID: " + id + " by user: " + userId);
+      eventService.deleteEvent(id, requestUserId);
+      logger.info("Successfully deleted event with ID: " + id + " by user: " + requestUserId);
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
       logger.severe("Failed to delete event with ID " + id + ": " + e.getMessage());
