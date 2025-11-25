@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -173,5 +175,30 @@ public class UserController {
     }
     user.setDisplayName(displayName);
     return repo.save(user);
+  }
+
+  /**
+   * Deletes a user by their ID.
+   *
+   * @param id the user ID
+   * @return no content if successful
+   */
+  @Operation(summary = "Delete user", description = "Deletes a user by their ID")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "204", description = "User deleted successfully"),
+        @ApiResponse(responseCode = "404", description = "User not found")
+      })
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteUser(
+      @Parameter(description = "User ID") @PathVariable String id) {
+    logger.info("Deleting user with ID: " + id);
+    if (!repo.existsById(id)) {
+      logger.warning("User not found with ID: " + id);
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+    }
+    repo.deleteById(id);
+    logger.info("Successfully deleted user with ID: " + id);
+    return ResponseEntity.noContent().build();
   }
 }

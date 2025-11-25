@@ -168,6 +168,25 @@ public class Event {
     return startAt != null && endAt != null && startAt.isBefore(endAt);
   }
 
+  /**
+   * Checks if this event has a time conflict with another event. Two events conflict if their time
+   * ranges overlap.
+   *
+   * @param other the other event to check for conflicts
+   * @return true if there is a time conflict, false otherwise
+   */
+  public boolean hasTimeConflict(Event other) {
+    if (other == null
+        || this.startAt == null
+        || this.endAt == null
+        || other.startAt == null
+        || other.endAt == null) {
+      return false;
+    }
+    // Two events conflict if one starts before the other ends and vice versa
+    return this.startAt.isBefore(other.endAt) && other.startAt.isBefore(this.endAt);
+  }
+
   @Override
   public String toString() {
     return "Event{"

@@ -9,10 +9,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "User registration request")
 public class UserRegistrationRequest {
 
-  @Schema(description = "User's email address", example = "user@example.com", required = true)
+  @Schema(
+      description = "User's email address",
+      example = "user@example.com",
+      requiredMode = Schema.RequiredMode.REQUIRED)
   private String email;
 
-  @Schema(description = "User's display name", example = "John Doe", required = true)
+  @Schema(
+      description = "User's display name",
+      example = "John Doe",
+      requiredMode = Schema.RequiredMode.REQUIRED)
   private String displayName;
 
   /** Default constructor. */

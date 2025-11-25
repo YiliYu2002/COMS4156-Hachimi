@@ -9,13 +9,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Organization creation request")
 public class OrganizationCreationRequest {
 
-  @Schema(description = "Organization name", example = "Acme Corp", required = true)
+  @Schema(
+      description = "Organization name",
+      example = "Acme Corp",
+      requiredMode = Schema.RequiredMode.REQUIRED)
   private String name;
 
   @Schema(
       description = "User ID of the organization creator",
       example = "user-123",
-      required = true)
+      requiredMode = Schema.RequiredMode.REQUIRED)
   private String createdBy;
 
   /** Default constructor. */

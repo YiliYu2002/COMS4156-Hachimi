@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.example.activityscheduler.event.controller.EventController;
+import com.example.activityscheduler.event.dto.EventCreationRequest;
+import com.example.activityscheduler.event.dto.EventUpdateRequest;
 import com.example.activityscheduler.event.model.Event;
 import com.example.activityscheduler.event.service.EventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,20 +58,20 @@ class EventControllerTests {
 
   @Test
   void testCreateEvent_Failure_InvalidTitle() throws Exception {
-    Event invalidEvent = new Event();
-    invalidEvent.setTitle(null);
-    invalidEvent.setOrgId("org-123");
-    invalidEvent.setStartAt(startTime);
-    invalidEvent.setEndAt(endTime);
+    EventCreationRequest invalidRequest = new EventCreationRequest();
+    invalidRequest.setTitle(null);
+    invalidRequest.setOrgId("org-123");
+    invalidRequest.setStartAt(startTime);
+    invalidRequest.setEndAt(endTime);
 
     mockMvc
         .perform(
             post("/api/events")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidEvent)))
+                .content(objectMapper.writeValueAsString(invalidRequest)))
         .andExpect(status().isBadRequest());
 
-    verify(eventService, never()).createEvent(any(Event.class));
+    verify(eventService, never()).createEvent(any(EventCreationRequest.class));
   }
 
   @Test
@@ -96,33 +98,38 @@ class EventControllerTests {
 
   @Test
   void testUpdateEvent_Success() throws Exception {
-    when(eventService.updateEvent(eq("event-123"), any(Event.class))).thenReturn(testEvent);
+    EventUpdateRequest request =
+        new EventUpdateRequest("Test Event", "Test Description", startTime, endTime, 10, "org-123");
+    when(eventService.updateEvent(eq("event-123"), any(EventUpdateRequest.class)))
+        .thenReturn(testEvent);
 
     mockMvc
         .perform(
             put("/api/events/event-123")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testEvent)))
+                .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(testEvent.getId()))
         .andExpect(jsonPath("$.title").value("Test Event"));
 
-    verify(eventService).updateEvent(eq("event-123"), any(Event.class));
+    verify(eventService).updateEvent(eq("event-123"), any(EventUpdateRequest.class));
   }
 
   @Test
   void testUpdateEvent_NotFound() throws Exception {
-    when(eventService.updateEvent(eq("nonexistent"), any(Event.class)))
+    EventUpdateRequest request =
+        new EventUpdateRequest("Test Event", "Test Description", startTime, endTime, 10, "org-123");
+    when(eventService.updateEvent(eq("nonexistent"), any(EventUpdateRequest.class)))
         .thenThrow(new IllegalArgumentException("Event not found with ID: nonexistent"));
 
     mockMvc
         .perform(
             put("/api/events/nonexistent")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testEvent)))
+                .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isNotFound());
 
-    verify(eventService).updateEvent(eq("nonexistent"), any(Event.class));
+    verify(eventService).updateEvent(eq("nonexistent"), any(EventUpdateRequest.class));
   }
 
   @Test

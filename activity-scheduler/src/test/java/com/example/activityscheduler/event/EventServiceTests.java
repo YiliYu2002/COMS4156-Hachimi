@@ -7,6 +7,8 @@ import static org.mockito.Mockito.*;
 import com.example.activityscheduler.attendee.model.Attendee;
 import com.example.activityscheduler.attendee.model.RsvpStatus;
 import com.example.activityscheduler.attendee.service.AttendeeService;
+import com.example.activityscheduler.event.dto.EventCreationRequest;
+import com.example.activityscheduler.event.dto.EventUpdateRequest;
 import com.example.activityscheduler.event.model.Event;
 import com.example.activityscheduler.event.repository.EventRepository;
 import com.example.activityscheduler.event.service.EventService;
@@ -65,6 +67,10 @@ class EventServiceTests {
 
   @Test
   void testCreateEvent_Success() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Test Description", startTime, endTime, 10, "org-123", "user-789");
+
     when(organizationService.getOrganizationById("org-123"))
         .thenReturn(Optional.of(testOrganization));
     when(userRepository.existsById("user-789")).thenReturn(true);
@@ -74,19 +80,23 @@ class EventServiceTests {
     when(attendeeService.createAttendee(anyString(), eq("user-789"), eq(RsvpStatus.YES)))
         .thenReturn(mockAttendee);
 
-    Event result = eventService.createEvent(testEvent);
+    Event result = eventService.createEvent(request);
 
     assertNotNull(result);
     assertEquals(testEvent.getId(), result.getId());
     verify(organizationService).getOrganizationById("org-123");
     verify(userRepository).existsById("user-789");
     verify(membershipService).existsMembership("org-123", "user-789");
-    verify(eventRepository).save(testEvent);
+    verify(eventRepository).save(any(Event.class));
     verify(attendeeService).createAttendee(anyString(), eq("user-789"), eq(RsvpStatus.YES));
   }
 
   @Test
   void testCreateEvent_WithoutCreatedBy() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Test Description", startTime, endTime, 10, "org-123", null);
+
     Event eventWithoutCreator = new Event();
     eventWithoutCreator.setTitle("Test Event");
     eventWithoutCreator.setOrgId("org-123");
@@ -98,23 +108,27 @@ class EventServiceTests {
         .thenReturn(Optional.of(testOrganization));
     when(eventRepository.save(any(Event.class))).thenReturn(eventWithoutCreator);
 
-    Event result = eventService.createEvent(eventWithoutCreator);
+    Event result = eventService.createEvent(request);
 
     assertNotNull(result);
     verify(organizationService).getOrganizationById("org-123");
     verify(userRepository, never()).existsById(anyString());
     verify(membershipService, never()).existsMembership(anyString(), anyString());
-    verify(eventRepository).save(eventWithoutCreator);
+    verify(eventRepository).save(any(Event.class));
   }
 
   @Test
   void testCreateEvent_UserNotFound() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Test Description", startTime, endTime, 10, "org-123", "user-789");
+
     when(organizationService.getOrganizationById("org-123"))
         .thenReturn(Optional.of(testOrganization));
     when(userRepository.existsById("user-789")).thenReturn(false);
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(testEvent));
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
 
     assertTrue(exception.getMessage().contains("User with ID 'user-789' does not exist"));
     verify(organizationService).getOrganizationById("org-123");
@@ -125,13 +139,17 @@ class EventServiceTests {
 
   @Test
   void testCreateEvent_UserNotMemberOfOrganization() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Test Description", startTime, endTime, 10, "org-123", "user-789");
+
     when(organizationService.getOrganizationById("org-123"))
         .thenReturn(Optional.of(testOrganization));
     when(userRepository.existsById("user-789")).thenReturn(true);
     when(membershipService.existsMembership("org-123", "user-789")).thenReturn(false);
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(testEvent));
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
 
     assertTrue(
         exception.getMessage().contains("is not a member of organization")
@@ -144,10 +162,14 @@ class EventServiceTests {
 
   @Test
   void testCreateEvent_OrganizationNotFound() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Test Description", startTime, endTime, 10, "org-123", "user-789");
+
     when(organizationService.getOrganizationById("org-123")).thenReturn(Optional.empty());
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(testEvent));
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
 
     assertTrue(exception.getMessage().contains("Organization with ID 'org-123' does not exist"));
     verify(eventRepository, never()).save(any(Event.class));
@@ -155,52 +177,46 @@ class EventServiceTests {
 
   @Test
   void testCreateEvent_NullOrgId() {
-    Event invalidEvent = new Event();
-    invalidEvent.setTitle("Test Event");
-    invalidEvent.setOrgId(null);
-    invalidEvent.setStartAt(startTime);
-    invalidEvent.setEndAt(endTime);
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Test Description", startTime, endTime, 10, null, "user-789");
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(invalidEvent));
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
 
     assertTrue(exception.getMessage().contains("Organization ID is required"));
   }
 
   @Test
   void testCreateEvent_InvalidTimeRange() {
-    Event invalidEvent = new Event();
-    invalidEvent.setTitle("Invalid Event");
-    invalidEvent.setOrgId("org-123");
-    invalidEvent.setStartAt(endTime);
-    invalidEvent.setEndAt(startTime);
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Invalid Event", "Description", endTime, startTime, 10, "org-123", "user-789");
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(invalidEvent));
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
 
     assertTrue(exception.getMessage().contains("Start time must be before end time"));
   }
 
   @Test
   void testCreateEvent_NullTitle() {
-    Event invalidEvent = new Event();
-    invalidEvent.setTitle(null);
-    invalidEvent.setOrgId("org-123");
-    invalidEvent.setStartAt(startTime);
-    invalidEvent.setEndAt(endTime);
+    EventCreationRequest request =
+        new EventCreationRequest(
+            null, "Description", startTime, endTime, 10, "org-123", "user-789");
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(invalidEvent));
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
 
     assertTrue(exception.getMessage().contains("Event title is required"));
   }
 
   @Test
-  void testCreateEvent_NullEvent() {
+  void testCreateEvent_NullRequest() {
     IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(null));
 
-    assertTrue(exception.getMessage().contains("Event cannot be null"));
+    assertTrue(exception.getMessage().contains("Event creation request cannot be null"));
   }
 
   @Test
@@ -209,81 +225,84 @@ class EventServiceTests {
     existingEvent.setId("event-123");
     existingEvent.setTitle("Original Event");
     existingEvent.setOrgId("org-123");
+    existingEvent.setCreatedBy("user-789");
+
+    EventUpdateRequest request =
+        new EventUpdateRequest("Test Event", "Test Description", startTime, endTime, 10, "org-123");
 
     when(eventRepository.findById("event-123")).thenReturn(Optional.of(existingEvent));
     when(organizationService.getOrganizationById("org-123"))
         .thenReturn(Optional.of(testOrganization));
-    when(userRepository.existsById("user-789")).thenReturn(true);
-    when(membershipService.existsMembership("org-123", "user-789")).thenReturn(true);
     when(eventRepository.save(any(Event.class))).thenReturn(existingEvent);
 
-    Event result = eventService.updateEvent("event-123", testEvent);
+    Event result = eventService.updateEvent("event-123", request);
 
     assertNotNull(result);
     assertEquals("event-123", result.getId());
     verify(organizationService).getOrganizationById("org-123");
-    verify(userRepository).existsById("user-789");
-    verify(membershipService).existsMembership("org-123", "user-789");
+    verify(userRepository, never()).existsById(anyString());
+    verify(membershipService, never()).existsMembership(anyString(), anyString());
     verify(eventRepository).save(existingEvent);
   }
 
   @Test
-  void testUpdateEvent_UserNotFound() {
+  void testUpdateEvent_OrganizationNotFound() {
     Event existingEvent = new Event();
     existingEvent.setId("event-123");
     existingEvent.setTitle("Original Event");
     existingEvent.setOrgId("org-123");
+    existingEvent.setCreatedBy("user-789");
+
+    EventUpdateRequest request =
+        new EventUpdateRequest("Test Event", "Test Description", startTime, endTime, 10, "org-123");
 
     when(eventRepository.findById("event-123")).thenReturn(Optional.of(existingEvent));
-    when(organizationService.getOrganizationById("org-123"))
-        .thenReturn(Optional.of(testOrganization));
-    when(userRepository.existsById("user-789")).thenReturn(false);
+    when(organizationService.getOrganizationById("org-123")).thenReturn(Optional.empty());
 
     IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class, () -> eventService.updateEvent("event-123", testEvent));
+            IllegalArgumentException.class, () -> eventService.updateEvent("event-123", request));
 
-    assertTrue(exception.getMessage().contains("User with ID 'user-789' does not exist"));
+    assertTrue(exception.getMessage().contains("Organization with ID 'org-123' does not exist"));
     verify(organizationService).getOrganizationById("org-123");
-    verify(userRepository).existsById("user-789");
+    verify(userRepository, never()).existsById(anyString());
     verify(membershipService, never()).existsMembership(anyString(), anyString());
     verify(eventRepository, never()).save(any(Event.class));
   }
 
   @Test
-  void testUpdateEvent_UserNotMemberOfOrganization() {
+  void testUpdateEvent_InvalidTimeRange() {
     Event existingEvent = new Event();
     existingEvent.setId("event-123");
     existingEvent.setTitle("Original Event");
     existingEvent.setOrgId("org-123");
+    existingEvent.setCreatedBy("user-789");
+
+    EventUpdateRequest request =
+        new EventUpdateRequest("Test Event", "Test Description", endTime, startTime, 10, "org-123");
 
     when(eventRepository.findById("event-123")).thenReturn(Optional.of(existingEvent));
-    when(organizationService.getOrganizationById("org-123"))
-        .thenReturn(Optional.of(testOrganization));
-    when(userRepository.existsById("user-789")).thenReturn(true);
-    when(membershipService.existsMembership("org-123", "user-789")).thenReturn(false);
 
     IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class, () -> eventService.updateEvent("event-123", testEvent));
+            IllegalArgumentException.class, () -> eventService.updateEvent("event-123", request));
 
-    assertTrue(
-        exception.getMessage().contains("is not a member of organization")
-            || exception.getMessage().contains("Only organization members can create events"));
-    verify(organizationService).getOrganizationById("org-123");
-    verify(userRepository).existsById("user-789");
-    verify(membershipService).existsMembership("org-123", "user-789");
+    assertTrue(exception.getMessage().contains("Start time must be before end time"));
+    // Time validation happens before organization validation
+    verify(organizationService, never()).getOrganizationById(anyString());
     verify(eventRepository, never()).save(any(Event.class));
   }
 
   @Test
   void testUpdateEvent_NotFound() {
+    EventUpdateRequest request =
+        new EventUpdateRequest("Test Event", "Test Description", startTime, endTime, 10, "org-123");
+
     when(eventRepository.findById("nonexistent")).thenReturn(Optional.empty());
 
     IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> eventService.updateEvent("nonexistent", testEvent));
+            IllegalArgumentException.class, () -> eventService.updateEvent("nonexistent", request));
 
     assertTrue(exception.getMessage().contains("Event not found"));
   }

@@ -406,10 +406,10 @@ public class MembershipController {
 
   /** Request DTO for creating a membership. */
   public static class MembershipRequest {
-    @Schema(description = "Organization ID", required = true)
+    @Schema(description = "Organization ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private String orgId;
 
-    @Schema(description = "User ID", required = true)
+    @Schema(description = "User ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private String userId;
 
     @Schema(description = "Membership status", example = "INVITED", defaultValue = "INVITED")
