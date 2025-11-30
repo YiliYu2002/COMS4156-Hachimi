@@ -19,11 +19,11 @@ import java.time.LocalDateTime;
 public class Membership {
 
   @Id
-  @Column(name = "org_id", length = 36, nullable = false)
+  @Column(name = "org_id", columnDefinition = "CHAR(36)", nullable = false)
   private String orgId;
 
   @Id
-  @Column(name = "user_id", length = 36, nullable = false)
+  @Column(name = "user_id", columnDefinition = "CHAR(36)", nullable = false)
   private String userId;
 
   @Enumerated(EnumType.STRING)

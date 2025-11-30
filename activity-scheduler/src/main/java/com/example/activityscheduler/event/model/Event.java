@@ -42,10 +42,10 @@ public class Event {
   private Integer capacity;
 
   @NotNull
-  @Column(name = "org_id", nullable = false, length = 36)
+  @Column(name = "org_id", nullable = false, columnDefinition = "CHAR(36)")
   private String orgId;
 
-  @Column(name = "created_by", length = 36)
+  @Column(name = "created_by", columnDefinition = "CHAR(36)")
   private String createdBy;
 
   @NotNull
@@ -92,7 +92,13 @@ public class Event {
   }
 
   public void setId(String id) {
-    this.id = id;
+    // Only set ID if it's not null or empty, otherwise keep the generated UUID
+    if (id != null && !id.trim().isEmpty()) {
+      this.id = id;
+    } else if (this.id == null || this.id.trim().isEmpty()) {
+      // If ID is null or empty, generate a new UUID
+      this.id = UUID.randomUUID().toString();
+    }
   }
 
   public String getTitle() {

@@ -18,11 +18,11 @@ import jakarta.persistence.Table;
 public class Attendee {
 
   @Id
-  @Column(name = "event_id", length = 36, nullable = false)
+  @Column(name = "event_id", columnDefinition = "CHAR(36)", nullable = false)
   private String eventId;
 
   @Id
-  @Column(name = "user_id", length = 36, nullable = false)
+  @Column(name = "user_id", columnDefinition = "CHAR(36)", nullable = false)
   private String userId;
 
   @Enumerated(EnumType.STRING)

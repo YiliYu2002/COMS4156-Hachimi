@@ -64,6 +64,10 @@ public class EventService {
     logger.info("Creating new event: " + (event != null ? event.getTitle() : "null"));
     validateEvent(event);
     if (event != null) {
+      // Ensure ID is set before saving
+      if (event.getId() == null || event.getId().trim().isEmpty()) {
+        event.setId(java.util.UUID.randomUUID().toString());
+      }
       validateOrganizationExists(event.getOrgId());
       if (event.getCreatedBy() != null && !event.getCreatedBy().trim().isEmpty()) {
         validateUserExists(event.getCreatedBy());
