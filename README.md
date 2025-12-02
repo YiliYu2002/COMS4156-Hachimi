@@ -169,7 +169,7 @@ The service supports multiple client instances running simultaneously. Here's ho
 
 #### How to Verify Multi-Client Support
 
-See [MULTI_CLIENT_VERIFICATION.md](MULTI_CLIENT_VERIFICATION.md) for detailed verification steps. Quick test:
+Quick test to verify multi-client support:
 
 1. Start the service
 2. Run client instance 1 in terminal 1, register as `alice@test.com`
@@ -448,7 +448,6 @@ For detailed client documentation, see:
 - **Client README**: `activity-scheduler-client/README.md`
 - **Client Architecture**: `activity-scheduler-client/ARCHITECTURE.md`
 - **End-to-End Testing**: `E2E_TESTING.md`
-- **Multi-Client Verification**: `MULTI_CLIENT_VERIFICATION.md`
 
 ### Third-Party Client Development
 
@@ -548,7 +547,6 @@ All configuration files are included in the repository:
 **Service Configuration:**
 - `activity-scheduler/src/main/resources/application.yml` - Main configuration (GCP MySQL)
 - `activity-scheduler/src/main/resources/application-local.yml` - Local H2 configuration
-- `activity-scheduler/src/main/resources/application-prod.yml.example` - Production template
 - `activity-scheduler/pom.xml` - Maven project configuration
 - `activity-scheduler/google_checks.xml` - Checkstyle configuration
 
@@ -780,13 +778,3 @@ This project utilized various AI tools to assist in development, testing, and do
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Additional Documentation
-
-- **Local Development**: [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md)
-- **GCP Deployment**: [GCP_DEPLOYMENT.md](GCP_DEPLOYMENT.md)
-- **Database Configuration**: [DATABASE_CONFIGURATION.md](DATABASE_CONFIGURATION.md)
-- **End-to-End Testing**: [E2E_TESTING.md](E2E_TESTING.md)
-- **Multi-Client Verification**: [MULTI_CLIENT_VERIFICATION.md](MULTI_CLIENT_VERIFICATION.md)
-- **Client README**: [activity-scheduler-client/README.md](activity-scheduler-client/README.md)
-- **Client Architecture**: [activity-scheduler-client/ARCHITECTURE.md](activity-scheduler-client/ARCHITECTURE.md)
