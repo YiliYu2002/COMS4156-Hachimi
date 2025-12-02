@@ -235,3 +235,4 @@ secrets/
 *.keystore
 activity-scheduler/src/main/resources/application.yml
 activity-scheduler/logs/*
+Activity-Scheduler-API.postman_collection.json

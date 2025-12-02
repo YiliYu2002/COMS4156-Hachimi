@@ -156,9 +156,13 @@ public class ConflictService {
       return new ArrayList<>();
     }
 
-    // Check for conflicts
+    // Check for conflicts (exclude the pending event itself from the check)
     List<Event> conflictingEvents = new ArrayList<>();
     for (com.example.activityscheduler.attendee.model.Attendee attendee : acceptedAttendees) {
+      // Skip if this is the pending event itself (creator was auto-added as attendee)
+      if (attendee.getEventId().equals(pendingEventId)) {
+        continue;
+      }
       Optional<Event> acceptedEvent = eventRepository.findById(attendee.getEventId());
       if (acceptedEvent.isPresent() && pendingEvent.hasTimeConflict(acceptedEvent.get())) {
         conflictingEvents.add(acceptedEvent.get());
