@@ -194,4 +194,24 @@ class UserControllerTests {
     UserRegistrationRequest request = new UserRegistrationRequest("invalid-email", "Alice");
     assertThrows(ResponseStatusException.class, () -> ctrl.register(request));
   }
+
+  @Test
+  void testDeleteUser() {
+    Mockito.when(mockRepo.existsById("1")).thenReturn(true);
+    Mockito.doNothing().when(mockRepo).deleteById("1");
+
+    controller.deleteUser("1");
+
+    Mockito.verify(mockRepo).existsById("1");
+    Mockito.verify(mockRepo).deleteById("1");
+  }
+
+  @Test
+  void testDeleteUserNotFound() {
+    Mockito.when(mockRepo.existsById("nonexistent")).thenReturn(false);
+
+    assertThrows(ResponseStatusException.class, () -> controller.deleteUser("nonexistent"));
+    Mockito.verify(mockRepo).existsById("nonexistent");
+    Mockito.verify(mockRepo, Mockito.never()).deleteById(Mockito.anyString());
+  }
 }
