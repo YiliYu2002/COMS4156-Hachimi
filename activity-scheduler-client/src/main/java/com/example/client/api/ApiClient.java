@@ -27,6 +27,7 @@ public class ApiClient {
     this.objectMapper.registerModule(new JavaTimeModule());
   }
 
+
   public String checkBasicHealth() throws IOException {
     HttpRequest request = HttpRequest.newBuilder()
         .uri(URI.create(baseUrl + "/health/basic"))
