@@ -99,71 +99,74 @@ public class ActivitySchedulerClient {
           case "7":
             listMyMemberships();
             break;
+          case "8":
+            updateMembershipStatus();
+            break;
           
           // Events
-          case "8":
+          case "9":
             createEvent();
             break;
-          case "9":
+          case "10":
             listAllEvents();
             break;
-          case "10":
+          case "11":
             listMyEvents();
             break;
-          case "11":
+          case "12":
             viewEventDetails();
             break;
-          case "12":
+          case "13":
             updateEvent();
             break;
-          case "13":
+          case "14":
             deleteEvent();
             break;
-          case "14":
+          case "15":
             listEventsByOrganization();
             break;
-          case "15":
+          case "16":
             listEventsByOrganizationAndUser();
             break;
           
           // Attendees
-          case "16":
+          case "17":
             inviteAttendee();
             break;
-          case "17":
+          case "18":
             updateRsvp();
             break;
-          case "18":
+          case "19":
             viewEventAttendees();
             break;
           
           // Users
-          case "19":
+          case "20":
             viewUserDetails();
             break;
-          case "20":
+          case "21":
             updateUserDisplayName();
             break;
-          case "21":
+          case "22":
             deleteUser();
             break;
           
           // Conflict Detection
-          case "22":
+          case "23":
             checkConflictsAmongAcceptedEvents();
             break;
-          case "23":
+          case "24":
             checkConflictsWithPendingEvent();
             break;
           
           // Quick Actions & Info
-          case "24":
+          case "25":
             showStatistics();
             break;
-          case "25":
+          case "26":
             exportEventsToText();
             break;
-          case "26":
+          case "27":
             logout();
             break;
           
@@ -230,35 +233,36 @@ public class ActivitySchedulerClient {
     System.out.println("\n--- MEMBERSHIPS ---");
     System.out.println("6. Create Membership");
     System.out.println("7. List My Memberships");
+    System.out.println("8. Update Membership Status");
     
     System.out.println("\n--- EVENTS ---");
-    System.out.println("8. Create Event");
-    System.out.println("9. List All Events in My Organizations");
-    System.out.println("10. List Events I Created");
-    System.out.println("11. View Event Details");
-    System.out.println("12. Update Event");
-    System.out.println("13. Delete Event");
-    System.out.println("14. List Events by Organization");
-    System.out.println("15. List Events by Organization & User");
+    System.out.println("9. Create Event");
+    System.out.println("10. List All Events in My Organizations");
+    System.out.println("11. List Events I Created");
+    System.out.println("12. View Event Details");
+    System.out.println("13. Update Event");
+    System.out.println("14. Delete Event");
+    System.out.println("15. List Events by Organization");
+    System.out.println("16. List Events by Organization & User");
     
     System.out.println("\n--- ATTENDEES ---");
-    System.out.println("16. Invite Attendee to Event");
-    System.out.println("17. Update RSVP Status");
-    System.out.println("18. View Event Attendees");
+    System.out.println("17. Invite Attendee to Event");
+    System.out.println("18. Update RSVP Status");
+    System.out.println("19. View Event Attendees");
     
     System.out.println("\n--- USERS ---");
-    System.out.println("19. View User Details");
-    System.out.println("20. Update My Display Name");
-    System.out.println("21. Delete User");
+    System.out.println("20. View User Details");
+    System.out.println("21. Update My Display Name");
+    System.out.println("22. Delete User");
     
     System.out.println("\n--- CONFLICT DETECTION ---");
-    System.out.println("22. Check Conflicts Among My Accepted Events");
-    System.out.println("23. Check if Event Conflicts with My Accepted Events");
+    System.out.println("23. Check Conflicts Among My Accepted Events");
+    System.out.println("24. Check if Event Conflicts with My Accepted Events");
     
     System.out.println("\n--- QUICK ACTIONS & INFO ---");
-    System.out.println("24. Show Statistics");
-    System.out.println("25. Export Events to Text");
-    System.out.println("26. Logout / Switch User");
+    System.out.println("25. Show Statistics");
+    System.out.println("26. Export Events to Text");
+    System.out.println("27. Logout / Switch User");
     
     System.out.println("\n0. Exit");
     System.out.println("\nTip: Type 'back', 'cancel', or 'q' during any operation to return to this menu");
@@ -382,26 +386,161 @@ public class ActivitySchedulerClient {
 
   // Membership Methods
   private void createMembership() {
-    System.out.println("\n=== Create Membership ===");
+    System.out.println("\n=== Create Membership (Invite User) ===");
     System.out.println("(Type 'back', 'cancel', or 'q' to return to main menu)");
-    String orgId = promptWithCancel("Organization ID: ");
-    if (orgId == null) return;
-    String userId = promptWithCancel("User ID: ");
-    if (userId == null) return;
-    String status = promptWithCancel("Status (ACTIVE/INVITED/SUSPENDED, default: INVITED): ");
-    if (status == null) return;
-    if (status.isEmpty()) {
-      status = "INVITED";
+    
+    // Get user's organizations and show numbered list
+    try {
+      List<Membership> myMemberships = apiClient.getMembershipsByUser(currentUserId);
+      if (myMemberships.isEmpty()) {
+        System.out.println("You are not a member of any organizations. Please create or join an organization first.");
+        return;
+      }
+      
+      System.out.println("\nSelect an organization:");
+      System.out.println(String.format("%-5s %-40s %-30s", "#", "Organization ID", "Organization Name"));
+      System.out.println("-".repeat(75));
+      
+      List<String> orgIds = new java.util.ArrayList<>();
+      int index = 1;
+      for (Membership m : myMemberships) {
+        String orgName = "Unknown";
+        try {
+          Organization org = apiClient.getOrganizationById(m.getOrgId());
+          if (org != null && org.getName() != null) {
+            orgName = org.getName();
+          }
+        } catch (Exception e) {
+          // If we can't get organization details, just use "Unknown"
+        }
+        System.out.println(String.format("%-5d %-40s %-30s", 
+            index,
+            truncate(m.getOrgId(), 40),
+            truncate(orgName, 30)));
+        orgIds.add(m.getOrgId());
+        index++;
+      }
+      
+      String orgChoice = promptWithCancel("\nEnter organization number: ");
+      if (orgChoice == null) return;
+      
+      int orgIndex;
+      try {
+        orgIndex = Integer.parseInt(orgChoice.trim()) - 1;
+        if (orgIndex < 0 || orgIndex >= orgIds.size()) {
+          System.err.println("Invalid organization number.");
+          return;
+        }
+      } catch (NumberFormatException e) {
+        System.err.println("Invalid number format.");
+        return;
+      }
+      
+      String orgId = orgIds.get(orgIndex);
+      String userId = promptWithCancel("User ID to invite: ");
+      if (userId == null) return;
+      String status = promptWithCancel("Status (ACTIVE/INVITED/SUSPENDED, default: INVITED): ");
+      if (status == null) return;
+      if (status.isEmpty()) {
+        status = "INVITED";
+      }
+      
+      try {
+        Membership membership = apiClient.createMembership(orgId, userId, status);
+        System.out.println("✓ Membership created successfully!");
+        System.out.println("Organization ID: " + membership.getOrgId());
+        System.out.println("User ID: " + membership.getUserId());
+        System.out.println("Status: " + membership.getStatus());
+      } catch (Exception e) {
+        System.err.println("Error creating membership: " + e.getMessage());
+      }
+    } catch (Exception e) {
+      System.err.println("Error fetching your memberships: " + e.getMessage());
     }
+  }
+
+  private void updateMembershipStatus() {
+    System.out.println("\n=== Update Membership Status ===");
+    System.out.println("(Type 'back', 'cancel', or 'q' to return to main menu)");
     
     try {
-      Membership membership = apiClient.createMembership(orgId, userId, status);
-      System.out.println("✓ Membership created successfully!");
-      System.out.println("Organization ID: " + membership.getOrgId());
-      System.out.println("User ID: " + membership.getUserId());
-      System.out.println("Status: " + membership.getStatus());
+      List<Membership> myMemberships = apiClient.getMembershipsByUser(currentUserId);
+      if (myMemberships.isEmpty()) {
+        System.out.println("You have no memberships to update.");
+        return;
+      }
+      
+      System.out.println("\nSelect a membership to update:");
+      System.out.println(String.format("%-5s %-40s %-30s %-15s", "#", "Organization ID", "Organization Name", "Current Status"));
+      System.out.println("-".repeat(90));
+      
+      List<Membership> membershipsList = new java.util.ArrayList<>();
+      int index = 1;
+      for (Membership m : myMemberships) {
+        String orgName = "Unknown";
+        try {
+          Organization org = apiClient.getOrganizationById(m.getOrgId());
+          if (org != null && org.getName() != null) {
+            orgName = org.getName();
+          }
+        } catch (Exception e) {
+          // If we can't get organization details, just use "Unknown"
+        }
+        System.out.println(String.format("%-5d %-40s %-30s %-15s", 
+            index,
+            truncate(m.getOrgId(), 40),
+            truncate(orgName, 30),
+            m.getStatus()));
+        membershipsList.add(m);
+        index++;
+      }
+      
+      String choice = promptWithCancel("\nEnter membership number: ");
+      if (choice == null) return;
+      
+      int membershipIndex;
+      try {
+        membershipIndex = Integer.parseInt(choice.trim()) - 1;
+        if (membershipIndex < 0 || membershipIndex >= membershipsList.size()) {
+          System.err.println("Invalid membership number.");
+          return;
+        }
+      } catch (NumberFormatException e) {
+        System.err.println("Invalid number format.");
+        return;
+      }
+      
+      Membership selectedMembership = membershipsList.get(membershipIndex);
+      System.out.println("\nCurrent status: " + selectedMembership.getStatus());
+      System.out.println("Available statuses: ACTIVE, SUSPENDED");
+      String newStatus = promptWithCancel("New status (ACTIVE/SUSPENDED): ");
+      if (newStatus == null) return;
+      
+      newStatus = newStatus.trim().toUpperCase();
+      if (!newStatus.equals("ACTIVE") && !newStatus.equals("SUSPENDED")) {
+        System.err.println("Invalid status. Must be ACTIVE or SUSPENDED.");
+        return;
+      }
+      
+      if (newStatus.equals(selectedMembership.getStatus())) {
+        System.out.println("Status is already " + newStatus + ". No change needed.");
+        return;
+      }
+      
+      try {
+        Membership updated = apiClient.updateMembershipStatus(
+            selectedMembership.getOrgId(), 
+            selectedMembership.getUserId(), 
+            newStatus);
+        System.out.println("✓ Membership status updated successfully!");
+        System.out.println("Organization ID: " + updated.getOrgId());
+        System.out.println("User ID: " + updated.getUserId());
+        System.out.println("New Status: " + updated.getStatus());
+      } catch (Exception e) {
+        System.err.println("Error updating membership status: " + e.getMessage());
+      }
     } catch (Exception e) {
-      System.err.println("Error creating membership: " + e.getMessage());
+      System.err.println("Error fetching your memberships: " + e.getMessage());
     }
   }
 

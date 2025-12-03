@@ -220,6 +220,31 @@ public class ApiClient {
     }
   }
 
+  public Membership updateMembershipStatus(String orgId, String userId, String status) throws IOException {
+    // Create a simple JSON object with just the status
+    String json = "{\"status\":\"" + status + "\"}";
+
+    HttpRequest httpRequest = HttpRequest.newBuilder()
+        .uri(URI.create(baseUrl + "/api/memberships/" + orgId + "/" + userId + "/status"))
+        .header("Content-Type", "application/json")
+        .PUT(HttpRequest.BodyPublishers.ofString(json))
+        .build();
+
+    HttpResponse<String> response;
+    try {
+      response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IOException("Request interrupted", e);
+    }
+    
+    if (response.statusCode() == 200) {
+      return objectMapper.readValue(response.body(), Membership.class);
+    } else {
+      throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+    }
+  }
+
   public List<Membership> getMembershipsByOrganization(String orgId) throws IOException {
     HttpRequest request = HttpRequest.newBuilder()
         .uri(URI.create(baseUrl + "/api/memberships/organization/" + orgId))
