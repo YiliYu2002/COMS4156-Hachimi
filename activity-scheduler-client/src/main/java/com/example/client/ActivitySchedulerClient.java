@@ -610,11 +610,11 @@ public class ActivitySchedulerClient {
     String description = promptWithCancel("Description (optional): ");
     if (description == null) return;
     
-    String startStr = promptWithCancel("Start time (yyyy-MM-dd HH:mm, e.g., 2025-12-01 10:00): ");
+    String startStr = promptWithCancel("Start time (format: yyyy-MM-dd HH:mm, e.g., 2025-12-25 18:00): ");
     if (startStr == null) return;
     LocalDateTime startAt = parseDateTime(startStr);
     
-    String endStr = promptWithCancel("End time (yyyy-MM-dd HH:mm, e.g., 2025-12-01 11:00): ");
+    String endStr = promptWithCancel("End time (format: yyyy-MM-dd HH:mm, e.g., 2025-12-25 22:00): ");
     if (endStr == null) return;
     LocalDateTime endAt = parseDateTime(endStr);
     
@@ -842,15 +842,48 @@ public class ActivitySchedulerClient {
   private void updateEvent() {
     System.out.println("\n=== Update Event ===");
     System.out.println("(Type 'back', 'cancel', or 'q' at any prompt to return to main menu)");
-    String eventId = promptWithCancel("Event ID: ");
-    if (eventId == null) return;
     
+    // Get events the user created
     try {
-      Event existingEvent = apiClient.getEventById(eventId);
-      if (existingEvent == null) {
-        System.out.println("Event not found.");
+      List<Event> myEvents = apiClient.getEventsByUser(currentUserId);
+      if (myEvents.isEmpty()) {
+        System.out.println("You haven't created any events yet.");
         return;
       }
+      
+      System.out.println("\nSelect an event to update:");
+      System.out.println(String.format("%-5s %-40s %-30s %-20s", "#", "Event ID", "Title", "Start Time"));
+      System.out.println("-".repeat(95));
+      
+      List<Event> eventsList = new java.util.ArrayList<>();
+      int index = 1;
+      for (Event event : myEvents) {
+        System.out.println(String.format("%-5d %-40s %-30s %-20s", 
+            index,
+            truncate(event.getId(), 40),
+            truncate(event.getTitle(), 30),
+            formatDateTime(event.getStartAt())));
+        eventsList.add(event);
+        index++;
+      }
+      
+      String choice = promptWithCancel("\nEnter event number: ");
+      if (choice == null) return;
+      
+      int eventIndex;
+      try {
+        eventIndex = Integer.parseInt(choice.trim()) - 1;
+        if (eventIndex < 0 || eventIndex >= eventsList.size()) {
+          System.err.println("Invalid event number.");
+          return;
+        }
+      } catch (NumberFormatException e) {
+        System.err.println("Invalid number format.");
+        return;
+      }
+      
+      Event existingEvent = eventsList.get(eventIndex);
+      String eventId = existingEvent.getId();
       
       System.out.println("Current event details:");
       displayEventDetails(existingEvent);
@@ -874,11 +907,15 @@ public class ActivitySchedulerClient {
         description = existingEvent.getDescription();
       }
       
-      String startStr = promptWithCancel("Start time [" + existingEvent.getStartAt() + "]: ");
+      // Format current times in input format for display
+      String currentStartStr = existingEvent.getStartAt().format(DATE_FORMATTER);
+      String currentEndStr = existingEvent.getEndAt().format(DATE_FORMATTER);
+      
+      String startStr = promptWithCancel("Start time (format: yyyy-MM-dd HH:mm, e.g., 2025-12-25 18:00) [" + currentStartStr + "]: ");
       if (startStr == null) return;
       LocalDateTime startAt = startStr.isEmpty() ? existingEvent.getStartAt() : parseDateTime(startStr);
       
-      String endStr = promptWithCancel("End time [" + existingEvent.getEndAt() + "]: ");
+      String endStr = promptWithCancel("End time (format: yyyy-MM-dd HH:mm, e.g., 2025-12-25 22:00) [" + currentEndStr + "]: ");
       if (endStr == null) return;
       LocalDateTime endAt = endStr.isEmpty() ? existingEvent.getEndAt() : parseDateTime(endStr);
       
@@ -931,19 +968,60 @@ public class ActivitySchedulerClient {
   private void deleteEvent() {
     System.out.println("\n=== Delete Event ===");
     System.out.println("(Type 'back', 'cancel', or 'q' to return to main menu)");
-    String eventId = promptWithCancel("Event ID: ");
-    if (eventId == null) return;
-    String confirm = promptWithCancel("Are you sure you want to delete this event? (yes/no): ");
-    if (confirm == null) return;
-    confirm = confirm.toLowerCase();
     
-    if (!confirm.equals("yes")) {
-      System.out.println("Deletion cancelled.");
-      return;
-    }
-    
+    // Get events the user created
     try {
-      apiClient.deleteEvent(eventId, currentUserId);
+      List<Event> myEvents = apiClient.getEventsByUser(currentUserId);
+      if (myEvents.isEmpty()) {
+        System.out.println("You haven't created any events yet.");
+        return;
+      }
+      
+      System.out.println("\nSelect an event to delete:");
+      System.out.println(String.format("%-5s %-40s %-30s %-20s", "#", "Event ID", "Title", "Start Time"));
+      System.out.println("-".repeat(95));
+      
+      List<Event> eventsList = new java.util.ArrayList<>();
+      int index = 1;
+      for (Event event : myEvents) {
+        System.out.println(String.format("%-5d %-40s %-30s %-20s", 
+            index,
+            truncate(event.getId(), 40),
+            truncate(event.getTitle(), 30),
+            formatDateTime(event.getStartAt())));
+        eventsList.add(event);
+        index++;
+      }
+      
+      String choice = promptWithCancel("\nEnter event number: ");
+      if (choice == null) return;
+      
+      int eventIndex;
+      try {
+        eventIndex = Integer.parseInt(choice.trim()) - 1;
+        if (eventIndex < 0 || eventIndex >= eventsList.size()) {
+          System.err.println("Invalid event number.");
+          return;
+        }
+      } catch (NumberFormatException e) {
+        System.err.println("Invalid number format.");
+        return;
+      }
+      
+      Event selectedEvent = eventsList.get(eventIndex);
+      System.out.println("\nSelected event:");
+      displayEventDetails(selectedEvent);
+      
+      String confirm = promptWithCancel("\nAre you sure you want to delete this event? (yes/no): ");
+      if (confirm == null) return;
+      confirm = confirm.toLowerCase();
+      
+      if (!confirm.equals("yes")) {
+        System.out.println("Deletion cancelled.");
+        return;
+      }
+      
+      apiClient.deleteEvent(selectedEvent.getId(), currentUserId);
       System.out.println("✓ Event deleted successfully!");
     } catch (Exception e) {
       System.err.println("Error deleting event: " + e.getMessage());
@@ -953,10 +1031,55 @@ public class ActivitySchedulerClient {
   private void listEventsByOrganization() {
     System.out.println("\n=== Events by Organization ===");
     System.out.println("(Type 'back', 'cancel', or 'q' to return to main menu)");
-    String orgId = promptWithCancel("Organization ID: ");
-    if (orgId == null) return;
     
+    // Get user's organizations and show numbered list
     try {
+      List<Membership> myMemberships = apiClient.getMembershipsByUser(currentUserId);
+      if (myMemberships.isEmpty()) {
+        System.out.println("You are not a member of any organizations.");
+        return;
+      }
+      
+      System.out.println("\nSelect an organization:");
+      System.out.println(String.format("%-5s %-40s %-30s", "#", "Organization ID", "Organization Name"));
+      System.out.println("-".repeat(75));
+      
+      List<String> orgIds = new java.util.ArrayList<>();
+      int index = 1;
+      for (Membership m : myMemberships) {
+        String orgName = "Unknown";
+        try {
+          Organization org = apiClient.getOrganizationById(m.getOrgId());
+          if (org != null && org.getName() != null) {
+            orgName = org.getName();
+          }
+        } catch (Exception e) {
+          // If we can't get organization details, just use "Unknown"
+        }
+        System.out.println(String.format("%-5d %-40s %-30s", 
+            index,
+            truncate(m.getOrgId(), 40),
+            truncate(orgName, 30)));
+        orgIds.add(m.getOrgId());
+        index++;
+      }
+      
+      String orgChoice = promptWithCancel("\nEnter organization number: ");
+      if (orgChoice == null) return;
+      
+      int orgIndex;
+      try {
+        orgIndex = Integer.parseInt(orgChoice.trim()) - 1;
+        if (orgIndex < 0 || orgIndex >= orgIds.size()) {
+          System.err.println("Invalid organization number.");
+          return;
+        }
+      } catch (NumberFormatException e) {
+        System.err.println("Invalid number format.");
+        return;
+      }
+      
+      String orgId = orgIds.get(orgIndex);
       List<Event> events = apiClient.getEventsByOrganization(orgId);
       if (events.isEmpty()) {
         System.out.println("No events found for this organization.");
@@ -972,13 +1095,60 @@ public class ActivitySchedulerClient {
     System.out.println("\n=== Events by Organization & User ===");
     System.out.println("(Type 'back', 'cancel', or 'q' at any prompt to return to main menu)");
     
-    String orgId = promptWithCancel("Organization ID: ");
-    if (orgId == null) return;
-    
-    String userId = promptWithCancel("User ID: ");
-    if (userId == null) return;
-    
+    // Get user's organizations and show numbered list
     try {
+      List<Membership> myMemberships = apiClient.getMembershipsByUser(currentUserId);
+      if (myMemberships.isEmpty()) {
+        System.out.println("You are not a member of any organizations.");
+        return;
+      }
+      
+      System.out.println("\nSelect an organization:");
+      System.out.println(String.format("%-5s %-40s %-30s", "#", "Organization ID", "Organization Name"));
+      System.out.println("-".repeat(75));
+      
+      List<String> orgIds = new java.util.ArrayList<>();
+      int index = 1;
+      for (Membership m : myMemberships) {
+        String orgName = "Unknown";
+        try {
+          Organization org = apiClient.getOrganizationById(m.getOrgId());
+          if (org != null && org.getName() != null) {
+            orgName = org.getName();
+          }
+        } catch (Exception e) {
+          // If we can't get organization details, just use "Unknown"
+        }
+        System.out.println(String.format("%-5d %-40s %-30s", 
+            index,
+            truncate(m.getOrgId(), 40),
+            truncate(orgName, 30)));
+        orgIds.add(m.getOrgId());
+        index++;
+      }
+      
+      String orgChoice = promptWithCancel("\nEnter organization number: ");
+      if (orgChoice == null) return;
+      
+      int orgIndex;
+      try {
+        orgIndex = Integer.parseInt(orgChoice.trim()) - 1;
+        if (orgIndex < 0 || orgIndex >= orgIds.size()) {
+          System.err.println("Invalid organization number.");
+          return;
+        }
+      } catch (NumberFormatException e) {
+        System.err.println("Invalid number format.");
+        return;
+      }
+      
+      String orgId = orgIds.get(orgIndex);
+      String userId = promptWithCancel("User ID (press Enter to use your ID): ");
+      if (userId == null) return;
+      if (userId.isEmpty()) {
+        userId = currentUserId;
+      }
+      
       List<Event> events = apiClient.getEventsByOrganizationAndUser(orgId, userId);
       if (events.isEmpty()) {
         System.out.println("No events found.");
