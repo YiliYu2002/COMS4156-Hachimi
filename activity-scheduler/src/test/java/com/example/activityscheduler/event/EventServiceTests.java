@@ -212,6 +212,82 @@ class EventServiceTests {
   }
 
   @Test
+  void testCreateEvent_EmptyTitle() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "   ", "Description", startTime, endTime, 10, "org-123", "user-789");
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
+
+    assertTrue(exception.getMessage().contains("Event title is required"));
+  }
+
+  @Test
+  void testCreateEvent_EmptyOrgId() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Description", startTime, endTime, 10, "   ", "user-789");
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
+
+    assertTrue(exception.getMessage().contains("Organization ID is required"));
+  }
+
+  @Test
+  void testCreateEvent_NullStartAt() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Description", null, endTime, 10, "org-123", "user-789");
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
+
+    assertTrue(exception.getMessage().contains("Start and end times are required"));
+    verify(organizationService, never()).getOrganizationById(anyString());
+  }
+
+  @Test
+  void testCreateEvent_NullEndAt() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Description", startTime, null, 10, "org-123", "user-789");
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
+
+    assertTrue(exception.getMessage().contains("Start and end times are required"));
+    verify(organizationService, never()).getOrganizationById(anyString());
+  }
+
+  @Test
+  void testCreateEvent_NegativeCapacity() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Description", startTime, endTime, -5, "org-123", "user-789");
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
+
+    assertTrue(exception.getMessage().contains("Capacity must be non-negative"));
+    verify(organizationService, never()).getOrganizationById(anyString());
+  }
+
+  @Test
+  void testCreateEvent_EmptyOrgIdInValidation() {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Description", startTime, endTime, 10, "", "user-789");
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(request));
+
+    assertTrue(exception.getMessage().contains("Organization ID is required"));
+    verify(organizationService, never()).getOrganizationById(anyString());
+  }
+
+  @Test
   void testCreateEvent_NullRequest() {
     IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> eventService.createEvent(null));

@@ -57,6 +57,25 @@ class EventControllerTests {
   }
 
   @Test
+  void testCreateEvent_Success() throws Exception {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Test Description", startTime, endTime, 10, "org-123", "user-789");
+    when(eventService.createEvent(any(EventCreationRequest.class))).thenReturn(testEvent);
+
+    mockMvc
+        .perform(
+            post("/api/events")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id").value(testEvent.getId()))
+        .andExpect(jsonPath("$.title").value("Test Event"));
+
+    verify(eventService).createEvent(any(EventCreationRequest.class));
+  }
+
+  @Test
   void testCreateEvent_Failure_InvalidTitle() throws Exception {
     EventCreationRequest invalidRequest = new EventCreationRequest();
     invalidRequest.setTitle(null);
@@ -69,6 +88,33 @@ class EventControllerTests {
             post("/api/events")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
+        .andExpect(status().isBadRequest());
+
+    verify(eventService, never()).createEvent(any(EventCreationRequest.class));
+  }
+
+  @Test
+  void testCreateEvent_Failure_ServiceThrowsIllegalArgumentException() throws Exception {
+    EventCreationRequest request =
+        new EventCreationRequest(
+            "Test Event", "Test Description", startTime, endTime, 10, "org-123", "user-789");
+    when(eventService.createEvent(any(EventCreationRequest.class)))
+        .thenThrow(new IllegalArgumentException("Organization with ID 'org-123' does not exist"));
+
+    mockMvc
+        .perform(
+            post("/api/events")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+
+    verify(eventService).createEvent(any(EventCreationRequest.class));
+  }
+
+  @Test
+  void testCreateEvent_Failure_NullRequest() throws Exception {
+    mockMvc
+        .perform(post("/api/events").contentType(MediaType.APPLICATION_JSON).content("null"))
         .andExpect(status().isBadRequest());
 
     verify(eventService, never()).createEvent(any(EventCreationRequest.class));
