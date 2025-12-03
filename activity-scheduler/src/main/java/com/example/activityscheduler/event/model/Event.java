@@ -42,10 +42,10 @@ public class Event {
   private Integer capacity;
 
   @NotNull
-  @Column(name = "org_id", nullable = false, length = 36)
+  @Column(name = "org_id", nullable = false, columnDefinition = "CHAR(36)")
   private String orgId;
 
-  @Column(name = "created_by", length = 36)
+  @Column(name = "created_by", columnDefinition = "CHAR(36)")
   private String createdBy;
 
   @NotNull
@@ -92,7 +92,13 @@ public class Event {
   }
 
   public void setId(String id) {
-    this.id = id;
+    // Only set ID if it's not null or empty, otherwise keep the generated UUID
+    if (id != null && !id.trim().isEmpty()) {
+      this.id = id;
+    } else if (this.id == null || this.id.trim().isEmpty()) {
+      // If ID is null or empty, generate a new UUID
+      this.id = UUID.randomUUID().toString();
+    }
   }
 
   public String getTitle() {
@@ -166,6 +172,25 @@ public class Event {
    */
   public boolean isValidTimeRange() {
     return startAt != null && endAt != null && startAt.isBefore(endAt);
+  }
+
+  /**
+   * Checks if this event has a time conflict with another event. Two events conflict if their time
+   * ranges overlap.
+   *
+   * @param other the other event to check for conflicts
+   * @return true if there is a time conflict, false otherwise
+   */
+  public boolean hasTimeConflict(Event other) {
+    if (other == null
+        || this.startAt == null
+        || this.endAt == null
+        || other.startAt == null
+        || other.endAt == null) {
+      return false;
+    }
+    // Two events conflict if one starts before the other ends and vice versa
+    return this.startAt.isBefore(other.endAt) && other.startAt.isBefore(this.endAt);
   }
 
   @Override

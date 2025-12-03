@@ -107,6 +107,28 @@ public class AttendeeController {
   }
 
   /**
+   * Retrieves all attendees for a specific user.
+   *
+   * @param userId the user ID
+   * @return a list of attendees for the user
+   */
+  @Operation(
+      summary = "Get attendees by user",
+      description = "Retrieves all attendees (event invitations) for a specific user")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved user attendees")
+      })
+  @GetMapping("/user/{userId}")
+  public List<Attendee> getAttendeesByUser(
+      @Parameter(description = "User ID") @PathVariable String userId) {
+    logger.info("Retrieving attendees for user: " + userId);
+    List<Attendee> attendees = attendeeService.getAttendeesByUser(userId);
+    logger.info("Retrieved " + attendees.size() + " attendees for user: " + userId);
+    return attendees;
+  }
+
+  /**
    * Creates a new attendee (event invitation).
    *
    * @param attendeeRequest the attendee creation request
@@ -355,10 +377,10 @@ public class AttendeeController {
 
   /** Request DTO for creating an attendee (event invitation). */
   public static class AttendeeRequest {
-    @Schema(description = "Event ID", required = true)
+    @Schema(description = "Event ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private String eventId;
 
-    @Schema(description = "User ID", required = true)
+    @Schema(description = "User ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private String userId;
 
     @Schema(

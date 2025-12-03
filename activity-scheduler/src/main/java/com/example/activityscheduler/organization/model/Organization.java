@@ -25,7 +25,7 @@ public class Organization {
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt = LocalDateTime.now();
 
-  @Column(name = "created_by", nullable = false)
+  @Column(name = "created_by", nullable = false, columnDefinition = "CHAR(36)")
   private String createdBy;
 
   /** Default constructor. Generates a new UUID for the organization ID. */

@@ -322,6 +322,124 @@ class OrganizationTests {
   }
 
   @Test
+  void testUpdateOrganizationWithNullId() {
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.updateOrganization(null, testOrganization);
+        });
+  }
+
+  @Test
+  void testUpdateOrganizationWithEmptyId() {
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.updateOrganization("", testOrganization);
+        });
+  }
+
+  @Test
+  void testUpdateOrganizationWithWhitespaceId() {
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.updateOrganization("   ", testOrganization);
+        });
+  }
+
+  @Test
+  void testUpdateOrganizationWithNullOrganization() {
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.updateOrganization("test-id", null);
+        });
+  }
+
+  @Test
+  void testUpdateOrganizationWithNullName() {
+    // Given
+    Organization orgWithNullName = new Organization("user123", "Test Org");
+    orgWithNullName.setName(null);
+
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.updateOrganization("test-id", orgWithNullName);
+        });
+  }
+
+  @Test
+  void testUpdateOrganizationWithEmptyName() {
+    // Given
+    Organization orgWithEmptyName = new Organization("user123", "Test Org");
+    orgWithEmptyName.setName("   ");
+
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.updateOrganization("test-id", orgWithEmptyName);
+        });
+  }
+
+  @Test
+  void testUpdateOrganizationWithNullCreatedBy() {
+    // Given
+    Organization orgWithNullCreatedBy = new Organization("user123", "Test Org");
+    orgWithNullCreatedBy.setCreatedBy(null);
+
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.updateOrganization("test-id", orgWithNullCreatedBy);
+        });
+  }
+
+  @Test
+  void testUpdateOrganizationWithEmptyCreatedBy() {
+    // Given
+    Organization orgWithEmptyCreatedBy = new Organization("user123", "Test Org");
+    orgWithEmptyCreatedBy.setCreatedBy("   ");
+
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.updateOrganization("test-id", orgWithEmptyCreatedBy);
+        });
+  }
+
+  @Test
+  void testUpdateOrganizationWithDuplicateName() {
+    // Given
+    String orgId = "test-id";
+    Organization updatedOrg = new Organization("user456", "Updated Organization");
+    Organization existingOrgWithSameName = new Organization("user789", "Updated Organization");
+    existingOrgWithSameName.setId("different-id");
+
+    when(organizationRepository.findByName(updatedOrg.getName()))
+        .thenReturn(Optional.of(existingOrgWithSameName));
+
+    // When & Then
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          organizationService.updateOrganization(orgId, updatedOrg);
+        });
+
+    verify(organizationRepository).findByName(updatedOrg.getName());
+    verify(organizationRepository, never()).findById(anyString());
+  }
+
+  @Test
   void testDeleteOrganizationSuccess() {
     // Given
     String orgId = "test-id";
@@ -347,6 +465,42 @@ class OrganizationTests {
         () -> {
           organizationService.deleteOrganization(orgId);
         });
+  }
+
+  @Test
+  void testDeleteOrganizationWithNullId() {
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.deleteOrganization(null);
+        });
+
+    verify(organizationRepository, never()).existsById(anyString());
+  }
+
+  @Test
+  void testDeleteOrganizationWithEmptyId() {
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.deleteOrganization("");
+        });
+
+    verify(organizationRepository, never()).existsById(anyString());
+  }
+
+  @Test
+  void testDeleteOrganizationWithWhitespaceId() {
+    // When & Then
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          organizationService.deleteOrganization("   ");
+        });
+
+    verify(organizationRepository, never()).existsById(anyString());
   }
 
   @Test

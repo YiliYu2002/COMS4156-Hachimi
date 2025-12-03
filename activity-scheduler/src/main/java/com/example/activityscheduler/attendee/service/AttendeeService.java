@@ -85,6 +85,20 @@ public class AttendeeService {
   }
 
   /**
+   * Retrieves all attendees for a specific user.
+   *
+   * @param userId the user ID
+   * @return a list of attendees for the user
+   */
+  @Transactional(readOnly = true)
+  public List<Attendee> getAttendeesByUser(String userId) {
+    logger.info("Retrieving attendees for user: " + userId);
+    List<Attendee> attendees = attendeeRepository.findByUserId(userId);
+    logger.info("Retrieved " + attendees.size() + " attendees for user: " + userId);
+    return attendees;
+  }
+
+  /**
    * Creates a new attendee (event invitation).
    *
    * @param eventId the event ID
