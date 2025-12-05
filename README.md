@@ -9,10 +9,10 @@
 **Status Change:** N/A
 
 **Team Members:**
-- **AlexZhu2** - User, Organization, Membership Development - [AlexZhu2](https://github.com/AlexZhu2)
-- **YiliYu2002** - Database Management, Product Manager - [YiliYu2002](https://github.com/YiliYu2002)
-- **Doglily3** - Organization Development - [Doglily3](https://github.com/Doglily3)
-- **jieji09** - Event Development - [jieji09](https://github.com/jieji09)
+- **AlexZhu2** - User, Organization, Membership Development; Implemented conflict detection, enhanced client application, deployed backend to GCP - [AlexZhu2](https://github.com/AlexZhu2)
+- **YiliYu2002** - Database Management, Product Manager; Implemented conflict detection, deployed backend to GCP - [YiliYu2002](https://github.com/YiliYu2002)
+- **Doglily3** - Organization Development; Enhanced event functionality - [Doglily3](https://github.com/Doglily3)
+- **jieji09** - Event Development; Developed client application - [jieji09](https://github.com/jieji09)
 
 **Project Management:** Tasks are tracked using GitHub Projects. [Link to GitHub Projects](https://github.com/YiliYu2002/COMS4156-Hachimi/projects)
 
