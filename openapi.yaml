@@ -16,6 +16,8 @@ tags:
   description: APIs for managing organization memberships
 - name: Organization Management
   description: APIs for managing organizations
+- name: Event Conflict Management
+  description: APIs for checking time conflicts between events
 paths:
   /api/users/{id}/username:
     put:
@@ -1144,8 +1146,85 @@ paths:
           content:
             '*/*':
               schema:
-                type: integer
-                format: int64
+          type: integer
+          format: int64
+  /api/conflicts/checkconflicts/{userId}/status:
+    get:
+      tags:
+      - Event Conflict Management
+      summary: Find conflicts among accepted events
+      description: Returns all events that a user has accepted (RSVP status = accepted/yes) that have time conflicts with each other
+      operationId: findConflictsAmongAcceptedEvents
+      parameters:
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      - name: status
+        in: query
+        description: RSVP status filter (should be 'accepted' or 'yes')
+        required: false
+        schema:
+          type: string
+          default: accepted
+      responses:
+        "200":
+          description: Conflicts found successfully
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+        "400":
+          description: Invalid user ID or status parameter
+          content:
+            '*/*':
+              schema:
+                type: string
+  /api/conflicts/checkconflicts/{userId}/{pendingEventId}:
+    get:
+      tags:
+      - Event Conflict Management
+      summary: Find conflicts with pending event
+      description: Returns all accepted events that conflict with a pending event. Returns empty list if no conflicts exist.
+      operationId: findConflictsWithPendingEvent
+      parameters:
+      - name: userId
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+      - name: pendingEventId
+        in: path
+        description: Pending event ID to check for conflicts
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Conflicts checked successfully
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+        "400":
+          description: Invalid user ID or pending event ID
+          content:
+            '*/*':
+              schema:
+                type: string
+        "404":
+          description: Pending event not found
+          content:
+            '*/*':
+              schema:
+                type: string
 components:
   schemas:
     User:
